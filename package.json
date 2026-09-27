@@ -1,0 +1,70 @@
+{
+  "name": "vehicle-marketplace",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=24.15.0 <25",
+    "npm": ">=11 <12"
+  },
+  "scripts": {
+    "dev": "concurrently --kill-others --raw \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "npm run dev --workspace @marketplace/api",
+    "dev:web": "npm run dev --workspace @marketplace/web",
+    "worker:media": "npm run worker:media --workspace @marketplace/api",
+    "worker:engagement": "npm run worker:engagement --workspace @marketplace/api",
+    "worker:delivery": "npm run worker:delivery --workspace @marketplace/api",
+    "delivery:retry": "npm run delivery:retry --workspace @marketplace/api --",
+    "outbox:recover": "npm run outbox:recover --workspace @marketplace/api --",
+    "media:cleanup": "npm run media:cleanup --workspace @marketplace/api",
+    "search:plans": "npm run search:plans --workspace @marketplace/api",
+    "moderation:plans": "npm run moderation:plans --workspace @marketplace/api",
+    "engagement:plans": "npm run engagement:plans --workspace @marketplace/api",
+    "messaging:plans": "npm run messaging:plans --workspace @marketplace/api",
+    "account-delivery:plans": "npm run account-delivery:plans --workspace @marketplace/api",
+    "ops:status": "npm run ops:status --workspace @marketplace/api --",
+    "ops:verify-data": "npm run ops:verify-data --workspace @marketplace/api --",
+    "ops:storage-probe": "npm run ops:storage-probe --workspace @marketplace/api --",
+    "maintenance:cleanup": "npm run maintenance:cleanup --workspace @marketplace/api --",
+    "db:backup": "node scripts/database-backup.mjs",
+    "ops:restore-test": "node scripts/restore-test.mjs",
+    "smoke:production": "node scripts/production-smoke.mjs",
+    "build": "npm run build --workspaces",
+    "lint": "eslint . --max-warnings 0 && node scripts/check-boundaries.mjs && prettier . --check",
+    "format": "prettier . --write",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspaces",
+    "test:integration": "npm run test:integration --workspace @marketplace/api",
+    "resilience:test": "node scripts/resilience-test.mjs",
+    "infra:up": "node scripts/infra.mjs",
+    "infra:down": "docker compose down",
+    "infra:test:up": "node scripts/infra.mjs test",
+    "infra:test:down": "docker compose -p marketplace-test --env-file .env.test down",
+    "migration:create": "npm run migration:create --workspace @marketplace/api --",
+    "migration:generate": "npm run migration:generate --workspace @marketplace/api --",
+    "migration:run": "npm run migration:run --workspace @marketplace/api",
+    "seed:catalog": "node scripts/seed-catalog.mjs",
+    "dev:grant-admin": "node scripts/dev-grant-admin.mjs",
+    "migration:revert": "npm run migration:revert --workspace @marketplace/api",
+    "env:init": "node scripts/init-env.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.13.5",
+    "eslint": "10.10.0",
+    "@next/eslint-plugin-next": "16.3.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.7",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.0",
+    "concurrently": "9.2.4"
+  },
+  "allowScripts": {
+    "argon2": false,
+    "@scarf/scarf": false,
+    "msgpackr-extract": false
+  }
+}

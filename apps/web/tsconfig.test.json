@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "rootDir": ".",
+    "outDir": ".test-build",
+    "lib": ["es2022", "dom"],
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "src/config.ts",
+    "src/lib/api-client.ts",
+    "src/features/auth/auth-client.ts",
+    "src/features/account/account-client.ts",
+    "src/features/messaging/messaging-client.ts",
+    "src/features/listings/listing-api.ts",
+    "src/features/listings/listing-form-model.ts",
+    "src/features/listings/listing-feedback.tsx",
+    "src/security-headers.ts",
+    "test/**/*.ts"
+  ]
+}

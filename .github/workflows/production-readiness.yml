@@ -1,0 +1,37 @@
+name: Production readiness
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+permissions:
+  contents: read
+concurrency:
+  group: production-readiness-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run env:init
+      - run: npm run infra:test:up
+      - run: npm run migration:run
+        env:
+          NODE_ENV: test
+      - run: npm run ops:verify-data
+        env:
+          NODE_ENV: test
+      - run: npm run maintenance:cleanup -- --dry-run
+        env:
+          NODE_ENV: test
+      - run: npm run ops:restore-test
+      - run: npm run resilience:test
+      - name: Stop test infrastructure
+        if: always()
+        run: npm run infra:test:down

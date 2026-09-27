@@ -1,0 +1,9 @@
+node_modules
+.tools
+dist
+.next
+.test-build
+package-lock.json
+AGENTS.md
+.env*
+**/next-env.d.ts

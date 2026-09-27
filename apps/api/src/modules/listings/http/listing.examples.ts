@@ -1,0 +1,45 @@
+const base = {
+  type: 'VEHICLE',
+  id: '60000000-0000-4000-8000-000000000001',
+  title: 'BMW 3 Series 2022',
+  description: 'Regularly serviced.',
+  price: { amountMinor: '2500000', currency: 'EUR' },
+  soldAt: null,
+  vehicle: {
+    id: '50000000-0000-4000-8000-000000000001',
+    make: { id: '10000000-0000-4000-8000-000000000001', name: 'BMW' },
+    model: { id: '20000000-0000-4000-8000-000000000001', name: '3 Series' },
+    generation: null,
+    year: 2022,
+    mileageKm: 30000,
+    bodyType: 'SEDAN',
+    fuelType: 'PETROL',
+    transmission: 'AUTOMATIC',
+    driveType: 'RWD',
+    condition: 'USED',
+    enginePowerHp: null,
+    engineDisplacementCc: null,
+    color: null,
+  },
+  location: null,
+};
+export const PUBLIC_LISTING_EXAMPLE = {
+  ...base,
+  status: 'PUBLISHED',
+  publishedAt: '2026-01-02T00:00:00.000Z',
+  seller: {
+    id: '550e8400-e29b-41d4-a716-446655440009',
+    displayName: 'Example seller',
+  },
+};
+export const OWNER_LISTING_EXAMPLE = {
+  ...base,
+  status: 'DRAFT',
+  publishedAt: null,
+  vehicle: { ...base.vehicle, vin: null },
+  version: 1,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+  submittedAt: null,
+  archivedAt: null,
+};

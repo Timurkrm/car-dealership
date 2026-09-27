@@ -1,0 +1,34 @@
+name: Quality
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run env:init
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run infra:test:up
+      - run: npm run migration:run
+        env:
+          NODE_ENV: test
+      - run: npm run test:integration
+      - run: npm run search:plans
+      - run: npm run build
+      - name: Stop test infrastructure
+        if: always()
+        run: npm run infra:test:down

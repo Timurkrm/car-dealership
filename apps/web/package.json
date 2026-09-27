@@ -1,0 +1,23 @@
+{
+  "name": "@marketplace/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node ../../scripts/web.mjs dev",
+    "build": "next build",
+    "start": "node ../../scripts/web.mjs start",
+    "typecheck": "next typegen && tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "tsc -p tsconfig.test.json && node --test .test-build/test/*.test.js"
+  },
+  "dependencies": {
+    "maplibre-gl": "6.10.0",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "socket.io-client": "4.8.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
+  }
+}
