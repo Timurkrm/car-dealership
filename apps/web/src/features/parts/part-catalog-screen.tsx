@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
@@ -406,6 +407,7 @@ export function PartCatalogScreen() {
   const { client } = useAuth();
   const router = useRouter();
   const raw = useSearchParams().toString();
+  const navigating = useRef(false);
   const [privateOrigin, setPrivateOrigin] =
     useState<PrivateSearchOrigin | null>(null);
   const mapUrl = useMemo(
@@ -493,7 +495,9 @@ export function PartCatalogScreen() {
             { scroll: false },
           )
         }
-        onCamera={(nextCamera) =>
+        onCamera={(nextCamera) => {
+          if (navigating.current || window.location.pathname !== '/parts')
+            return;
           router.replace(
             catalogUrl(
               '/parts',
@@ -502,8 +506,8 @@ export function PartCatalogScreen() {
               true,
             ),
             { scroll: false },
-          )
-        }
+          );
+        }}
         onSearchArea={(bounds) => {
           setPrivateOrigin(null);
           router.push(
@@ -545,6 +549,9 @@ export function PartCatalogScreen() {
                 listing={listing}
                 selected={listing.id === selectedId}
                 onSelect={onSelect}
+                onNavigate={() => {
+                  navigating.current = true;
+                }}
               />
             ))}
             <button

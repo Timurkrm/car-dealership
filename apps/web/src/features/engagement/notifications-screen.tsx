@@ -118,6 +118,7 @@ export function NotificationsScreen() {
             </p>
             {item.target ? (
               <Link
+                prefetch={false}
                 href={
                   item.target.kind === 'CONVERSATION'
                     ? `/account/messages/${item.target.id}`

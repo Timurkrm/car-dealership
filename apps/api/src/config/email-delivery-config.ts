@@ -57,7 +57,7 @@ export function parseEmailDeliveryConfig(
     /[\r\n]/.test(fromAddress)
   )
     issues.push('EMAIL_FROM_ADDRESS must be a valid bounded email address');
-  const fromName = env.EMAIL_FROM_NAME ?? 'Vehicle Marketplace';
+  const fromName = env.EMAIL_FROM_NAME ?? 'Automotive Marketplace';
   if (!fromName.trim() || fromName.length > 100 || /[\r\n]/.test(fromName))
     issues.push('EMAIL_FROM_NAME must contain 1–100 characters');
 

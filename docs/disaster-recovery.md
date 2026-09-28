@@ -3,6 +3,12 @@
 This runbook describes recovery mechanics. Business owners must set the RPO/RTO,
 backup schedule and retention before production launch.
 
+Current status: RPO, RTO and legal retention are **PENDING CLIENT APPROVAL**. Until
+approved, the deployment must not claim a production recovery guarantee. The initial
+technical schedule is continuous managed PITR/WAL, daily encrypted logical backup,
+monthly isolated restore and quarterly production-equivalent staging PITR drill; the
+client may tighten it after data-volume and business-impact review.
+
 ## Preparation
 
 - Keep encrypted, checksummed PostgreSQL custom-format backups off the database host.

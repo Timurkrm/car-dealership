@@ -70,10 +70,17 @@ export class AuthPersistence {
       .getOne();
   }
   async createSession(
-    input: { id: string; userId: string; expiresAt: Date; lastUsedAt: Date },
+    input: { id: string; userId: string; expiresAt: Date },
     manager: EntityManager,
   ): Promise<void> {
-    await manager.insert(UserSession, input);
+    // created_at and last_used_at must share the database clock. Mixing an
+    // application timestamp with the database default can make last_used_at a
+    // few milliseconds earlier and violate ck_user_sessions_dates.
+    await manager.query(
+      `INSERT INTO user_sessions(id,user_id,expires_at,last_used_at)
+       VALUES ($1,$2,$3,CURRENT_TIMESTAMP)`,
+      [input.id, input.userId, input.expiresAt],
+    );
   }
   async addRefresh(
     input: { sessionId: string; tokenHash: string; expiresAt: Date },

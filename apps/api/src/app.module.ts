@@ -24,6 +24,7 @@ import { AuditModule } from './modules/audit';
 import { EngagementModule } from './engagement.module';
 import { AccountModule } from './modules/account';
 import { EmailDeliveryModule } from './modules/email-delivery';
+import { MetricsModule } from './platform/observability/metrics.module';
 const listings = ListingsModule.withMedia(MediaReadModule, MediaReadService);
 const moderation = ModerationModule.register(listings);
 const search = SearchModule.register(listings);
@@ -35,6 +36,7 @@ const engagement = EngagementModule.register(search, favorites, messaging);
   exports: [PlatformModule, MediaModule, EngagementModule, EmailDeliveryModule],
   imports: [
     PlatformModule,
+    MetricsModule,
     EmailDeliveryModule,
     HealthModule,
     AuthModule,

@@ -19,11 +19,13 @@ export class RealtimeClient {
   constructor(
     private readonly credential: (force?: boolean) => Promise<string>,
     private readonly socketFactory: RealtimeSocketFactory = io,
+    private readonly origin: () => string | undefined = () =>
+      typeof window === 'undefined' ? undefined : window.location.origin,
   ) {}
 
   async connect(): Promise<void> {
     if (this.socket) return;
-    const base = process.env.NEXT_PUBLIC_API_URL;
+    const base = this.origin();
     if (!base) return;
     const socket = this.socketFactory(`${base}/realtime`, {
       autoConnect: false,

@@ -16,6 +16,7 @@ import { APP_CONFIG } from '../../../config/config';
 import type { AppConfig } from '../../../config/config';
 import { ApiException } from '../../../platform/http/api-error';
 import { RequestRateGuard } from '../../../platform/http/request-rate.guard';
+import { MetricsRegistry } from '../../../platform/observability/metrics.registry';
 import {
   conversationRoom,
   userRoom,
@@ -67,6 +68,7 @@ export class MessagingGateway
     private readonly conversations: ConversationQueries,
     @Inject(MessageCommands) private readonly messages: MessageCommands,
     @Inject(RequestRateGuard) private readonly rates: RequestRateGuard,
+    @Inject(MetricsRegistry) private readonly metrics: MetricsRegistry,
   ) {}
 
   afterInit(server: Server): void {
@@ -114,6 +116,7 @@ export class MessagingGateway
   }
 
   handleConnection(client: MessagingSocket): void {
+    this.metrics.websocketConnected();
     void client.join(userRoom(client.data.principal.userId));
     void client.join(`session:${client.data.principal.sessionId}`);
     const delay = Math.max(0, client.data.expiresAt - Date.now() + 5000);
@@ -126,6 +129,7 @@ export class MessagingGateway
   }
 
   handleDisconnect(client: MessagingSocket): void {
+    this.metrics.websocketDisconnected();
     clearTimeout(client.data.expiryTimer);
     clearInterval(client.data.revalidationTimer);
   }

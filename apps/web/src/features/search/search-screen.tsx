@@ -1,5 +1,11 @@
 'use client';
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../auth/auth-provider';
 import { ListingApi } from '../listings/listing-api';
@@ -29,11 +35,13 @@ export function SearchResults({
   onReset,
   selectedId,
   onSelect,
+  onNavigate,
 }: {
   state: ReturnType<SearchSession['snapshot']>;
   onReset: () => void;
   selectedId?: string | null;
   onSelect?: (listingId: string) => void;
+  onNavigate?: () => void;
 }) {
   return (
     <section aria-label="Результаты поиска" aria-busy={state.loading}>
@@ -51,6 +59,7 @@ export function SearchResults({
           listing={listing}
           selected={listing.id === selectedId}
           onSelect={onSelect}
+          onNavigate={onNavigate}
         />
       ))}
     </section>
@@ -60,6 +69,7 @@ export function SearchScreen() {
   const { client } = useAuth();
   const router = useRouter();
   const raw = useSearchParams().toString();
+  const navigating = useRef(false);
   const [privateOrigin, setPrivateOrigin] =
     useState<PrivateSearchOrigin | null>(null);
   const mapUrl = useMemo(
@@ -147,7 +157,9 @@ export function SearchScreen() {
             { scroll: false },
           )
         }
-        onCamera={(nextCamera) =>
+        onCamera={(nextCamera) => {
+          if (navigating.current || window.location.pathname !== '/cars')
+            return;
           router.replace(
             catalogUrl(
               '/cars',
@@ -156,8 +168,8 @@ export function SearchScreen() {
               true,
             ),
             { scroll: false },
-          )
-        }
+          );
+        }}
         onSearchArea={(bounds) => {
           setPrivateOrigin(null);
           router.push(
@@ -185,6 +197,9 @@ export function SearchScreen() {
               state={state}
               selectedId={selectedId}
               onSelect={onSelect}
+              onNavigate={() => {
+                navigating.current = true;
+              }}
               onReset={() => {
                 setPrivateOrigin(null);
                 router.push('/cars', { scroll: false });

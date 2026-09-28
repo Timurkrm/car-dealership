@@ -11,10 +11,12 @@ export function SearchCard({
   listing,
   selected = false,
   onSelect,
+  onNavigate,
 }: {
   listing: SearchItem;
   selected?: boolean;
   onSelect?: (listingId: string) => void;
+  onNavigate?: () => void;
 }) {
   const distance = formatSearchDistance(
     listing.location?.distanceMeters ?? null,
@@ -46,6 +48,7 @@ export function SearchCard({
       )}
       <h2>
         <Link
+          onClick={onNavigate}
           href={
             listing.type === 'VEHICLE'
               ? `/listings/${listing.id}`

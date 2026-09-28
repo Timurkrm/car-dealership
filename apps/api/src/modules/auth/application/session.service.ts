@@ -43,10 +43,7 @@ export class SessionService {
       now.getTime() + this.config.auth.refreshTtlSeconds * 1000,
     );
     const secret = newSecret();
-    await this.persistence.createSession(
-      { id, userId, expiresAt, lastUsedAt: now },
-      manager,
-    );
+    await this.persistence.createSession({ id, userId, expiresAt }, manager);
     await this.persistence.addRefresh(
       { sessionId: id, tokenHash: tokenDigest(secret, 'REFRESH'), expiresAt },
       manager,

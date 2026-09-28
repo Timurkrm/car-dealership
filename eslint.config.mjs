@@ -13,6 +13,7 @@ export default [
       '**/.next/**',
       '**/.test-build/**',
       '**/next-env.d.ts',
+      'apps/web/public/maplibre/**',
     ],
   },
   js.configs.recommended,
@@ -28,9 +29,18 @@ export default [
     settings: { next: { rootDir: 'apps/web/' } },
   },
   {
-    files: ['scripts/*.mjs'],
+    files: ['scripts/*.mjs', 'load/*.mjs'],
     languageOptions: {
-      globals: { process: 'readonly', console: 'readonly', URL: 'readonly' },
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        URL: 'readonly',
+        fetch: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        AbortSignal: 'readonly',
+      },
     },
   },
   {

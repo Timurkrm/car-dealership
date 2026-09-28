@@ -1,0 +1,137 @@
+name: Release artifacts
+
+on:
+  push:
+    tags: ['v*.*.*', 'v*.*.*-rc.*']
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish immutable images to GHCR
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run env:init
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --audit-level=high
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run security:secrets
+      - run: npm run docs:check
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: test "${GITHUB_REF_NAME#v}" = "$(node -p "require('./package.json').version")"
+      - name: Build provenance
+        run: node scripts/release-metadata.mjs | tee release-metadata.json
+      - name: Generate SPDX dependency SBOM
+        run: npm sbom --omit=dev --sbom-format=spdx > dependency-sbom.spdx.json
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-metadata
+          path: |
+            release-metadata.json
+            dependency-sbom.spdx.json
+
+  images:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_PREFIX: ${{ github.repository_owner }}/automotive-marketplace
+    outputs:
+      backend_digest: ${{ steps.publish.outputs.backend_digest }}
+      web_digest: ${{ steps.publish.outputs.web_digest }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - name: Resolve immutable tags
+        id: meta
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - name: Build backend image
+        run: docker build -f Dockerfile.backend -t marketplace-backend:scan .
+      - name: Build web image
+        run: >-
+          docker build -f Dockerfile.web
+          --build-arg API_URL=http://api.internal:4000
+          --build-arg NEXT_PUBLIC_MAP_STYLE_URL=https://maps.invalid/style.json
+          -t marketplace-web:scan .
+      - run: npm run container:inspect
+        env:
+          BACKEND_IMAGE: marketplace-backend:scan
+          WEB_IMAGE: marketplace-web:scan
+      - name: Scan backend image
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.67.2 image --exit-code 1 --severity CRITICAL,HIGH --ignore-unfixed marketplace-backend:scan
+      - name: Scan web image
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.67.2 image --exit-code 1 --severity CRITICAL,HIGH --ignore-unfixed marketplace-web:scan
+      - name: Login to GHCR
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish immutable image tags
+        id: publish
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish
+        shell: bash
+        run: |
+          for component in backend web; do
+            SOURCE="marketplace-${component}:scan"
+            VERSION_TAG="$REGISTRY/$IMAGE_PREFIX-${component}:${{ steps.meta.outputs.version }}"
+            SHA_TAG="$REGISTRY/$IMAGE_PREFIX-${component}:sha-${{ steps.meta.outputs.sha }}"
+            docker tag "$SOURCE" "$VERSION_TAG"
+            docker tag "$SOURCE" "$SHA_TAG"
+            docker push "$VERSION_TAG"
+            docker push "$SHA_TAG"
+            DIGEST=$(docker buildx imagetools inspect "$VERSION_TAG" --format '{{json .Manifest.Digest}}' | tr -d '"')
+            echo "${component}_digest=$DIGEST" >> "$GITHUB_OUTPUT"
+            echo "$component digest: $DIGEST"
+          done
+
+  staging-contract:
+    needs: images
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - run: |
+          echo 'PENDING EXTERNAL - configure the client staging deploy hook described in docs/deployment/README.md'
+          echo 'backend=${{ needs.images.outputs.backend_digest }}'
+          echo 'web=${{ needs.images.outputs.web_digest }}'
+
+  production-promotion:
+    needs: staging-contract
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-rc.')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: |
+          echo 'PENDING EXTERNAL - promote the already-scanned image digests; never rebuild here'
+          echo 'backend=${{ needs.images.outputs.backend_digest }}'
+          echo 'web=${{ needs.images.outputs.web_digest }}'

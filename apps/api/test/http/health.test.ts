@@ -23,6 +23,13 @@ class TestController {
   @Get('error') error() {
     throw new Error('SELECT secret-password FROM private_table /internal/path');
   }
+  @Get('database-unavailable') databaseUnavailable() {
+    const error = new Error(
+      'connect ECONNREFUSED postgres.internal:5432 secret-password',
+    ) as Error & { code: string };
+    error.code = 'ECONNREFUSED';
+    throw error;
+  }
 }
 let app: INestApplication;
 let origin: string;
@@ -154,6 +161,20 @@ test('unknown routes and unexpected failures do not leak internals', async () =>
         !body.includes('stack'),
     );
   }
+});
+test('database connectivity failures map to a safe 503 without connection details', async () => {
+  const response = await fetch(
+    `${origin}/api/v1/test-only/database-unavailable`,
+  );
+  assert.equal(response.status, 503);
+  const body = await response.text();
+  assert.match(body, /SERVICE_UNAVAILABLE/);
+  assert.ok(
+    !body.includes('postgres.internal') &&
+      !body.includes('5432') &&
+      !body.includes('secret-password') &&
+      !body.includes('ECONNREFUSED'),
+  );
 });
 test('CORS permits only the configured browser origin', async () => {
   const response = await fetch(`${origin}/api/v1/health`, {

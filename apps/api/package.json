@@ -1,6 +1,6 @@
 {
   "name": "@marketplace/api",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.1",
   "private": true,
   "scripts": {
     "dev": "npm run build && concurrently --kill-others --raw \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch dist/main.js\"",
@@ -24,6 +24,7 @@
     "ops:verify-data": "npm run build && node dist/operations/ops-verify-data-command.js",
     "ops:storage-probe": "npm run build && node dist/operations/ops-storage-probe-command.js",
     "maintenance:cleanup": "npm run build && node dist/operations/maintenance-cleanup-command.js",
+    "bootstrap:admin": "npm run build && node dist/operations/admin-bootstrap-command.js",
     "test:resilience": "tsc -p tsconfig.test.json && node --test .test-build/test/integration/resilience.test.js",
     "migration:create": "node ../../scripts/migration.mjs create",
     "migration:generate": "node ../../scripts/migration.mjs generate",
@@ -35,7 +36,7 @@
     "@aws-sdk/s3-request-presigner": "3.1135.0",
     "@nestjs/common": "11.2.5",
     "@nestjs/core": "11.2.5",
-    "@nestjs/platform-express": "11.2.5",
+    "@nestjs/platform-express": "11.2.6",
     "@nestjs/platform-socket.io": "11.2.5",
     "@nestjs/swagger": "11.4.7",
     "@nestjs/websockets": "11.2.5",

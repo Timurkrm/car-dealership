@@ -29,7 +29,7 @@ export function databaseOptions(config: AppConfig): DataSourceOptions {
       lock_timeout: config.database.lockTimeoutMs,
       idle_in_transaction_session_timeout:
         config.database.idleTransactionTimeoutMs,
-      application_name: 'vehicle-marketplace-api',
+      application_name: 'automotive-marketplace-api',
       options: [
         '-c timezone=UTC',
         `-c lock_timeout=${config.database.lockTimeoutMs}`,

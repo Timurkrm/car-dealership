@@ -4,6 +4,8 @@ node_modules/
 .env.*
 !.env.example
 !.env.test.example
+!.env.e2e.example
+!.env.production.example
 dist/
 .next/
 .test-build/
@@ -16,8 +18,11 @@ Thumbs.db
 .idea/
 .vscode/
 infra/data/
+infra/local-tls/
 playwright-report/
 test-results/
+qa-results/
+apps/web/public/maplibre/
 backups/
 *.dump
 *.backup

@@ -55,9 +55,10 @@ Run the anonymous non-destructive smoke against a deployed API:
 SMOKE_API_URL=https://marketplace.example npm run smoke:production
 ```
 
-It checks liveness, readiness, one bounded public search and vehicle make catalog. It
-does not create accounts or data. Authenticated staging smoke remains a manual test
-with a dedicated test account; never place credentials in the command line or logs.
+It checks liveness, readiness, bounded Cars and Parts searches, both catalogs and
+optional Web/security headers. It does not create accounts or data. The separate
+authenticated smoke validates account reads and WebSocket connectivity with a
+dedicated staging account; pass credentials only through the environment.
 
 ## Backup
 
@@ -153,6 +154,10 @@ single configured web origin. Production cookies require Secure and SameSite Str
 Swagger is disabled by default in production; enable it only behind an explicit access
 policy.
 
+Prometheus metrics are disabled unless `METRICS_ENABLED=true`. Scrape
+`/api/internal/metrics` only through the private monitoring network and make public
+ingress return 404. See [monitoring.md](monitoring.md).
+
 The API production build disables TypeScript source maps, and Next.js production
 browser source maps remain at its disabled default. Do not enable/publicly serve maps
 without a protected error-ingestion and artifact-access policy.
@@ -161,6 +166,29 @@ Use a restricted S3 runtime principal scoped to the media bucket and required ob
 verbs/prefixes; do not use root/admin keys. Direct PUT CORS should allow only the web
 origin, PUT and the required content-type header. Put PostgreSQL and Redis on private
 networks with verified TLS. Rotate secrets through the deployment secret manager.
+
+For the first production administrator, register and verify an account normally,
+then execute `ADMIN_BOOTSTRAP_EMAIL=<approved> npm run bootstrap:admin -- --confirm`
+from an authorized operator context. The command does not create a password and writes
+an audit record. Later role changes use the authenticated Admin API.
+
+## Operational schedule
+
+The following bootstrap cadence requires client RPO/RTO and retention approval:
+
+- continuously retain managed PostgreSQL WAL/PITR and run an encrypted logical backup
+  at least daily until a stricter approved RPO replaces this baseline;
+- verify backup completion/checksum every run; run an isolated restore drill monthly
+  and after database major upgrades, plus a production-equivalent staging PITR drill
+  at least quarterly;
+- run `ops:verify-data` after deployment/restore and daily; alert on exit 2;
+- run `ops:status` at least every five minutes through monitoring and record trends;
+- run cleanup dry-run then confirmed bounded cleanup daily after retention approval;
+- probe private storage daily and review provider durability/versioning monthly;
+- review capacity, deadlocks, autovacuum, index/table growth and provider quotas weekly.
+
+These are technical starting points, not an approved business objective. Record each
+job's timestamp/result and alert on missed schedules.
 
 ## Table and index maintenance
 

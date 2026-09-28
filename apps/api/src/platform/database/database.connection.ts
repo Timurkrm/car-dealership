@@ -33,6 +33,21 @@ export class DatabaseConnection implements OnModuleInit, OnApplicationShutdown {
     )
       throw new Error('Writable PostGIS unavailable');
   }
+  poolStats(): { total: number; idle: number; waiting: number } {
+    const driver = this.source.driver as unknown as {
+      master?: {
+        totalCount?: number;
+        idleCount?: number;
+        waitingCount?: number;
+      };
+    };
+    const pool = driver.master;
+    return {
+      total: Number(pool?.totalCount ?? 0),
+      idle: Number(pool?.idleCount ?? 0),
+      waiting: Number(pool?.waitingCount ?? 0),
+    };
+  }
   async onApplicationShutdown(): Promise<void> {
     if (this.source.isInitialized) await this.source.destroy();
     this.logger.event('info', 'Database disconnected', {

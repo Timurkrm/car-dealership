@@ -1,0 +1,38 @@
+{
+  admin off
+}
+
+https://localhost {
+  tls internal
+  encode zstd gzip
+
+  @mapStyle path /reference-map/style.json
+  handle @mapStyle {
+    root * /srv
+    file_server
+  }
+
+  @metrics path /api/internal/metrics
+  handle @metrics {
+    respond 404
+  }
+
+  # /realtime is the Socket.IO namespace; the transport handshake uses
+  # /socket.io/* unless a future coordinated client/server change overrides it.
+  @backend path /api/* /socket.io/* /realtime*
+  handle @backend {
+    reverse_proxy api-a:4000 api-b:4000 {
+      lb_policy round_robin
+      health_uri /api/v1/health
+      health_interval 5s
+      fail_duration 5s
+      max_fails 1
+      lb_try_duration 3s
+      lb_try_interval 100ms
+    }
+  }
+
+  handle {
+    reverse_proxy web:3000
+  }
+}

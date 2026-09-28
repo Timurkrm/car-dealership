@@ -45,13 +45,17 @@ export function EngagementNavigation() {
   if (status !== 'authenticated') return null;
   return (
     <>
-      <Link href="/account/favorites">Избранное</Link>
-      <Link href="/account/saved-searches">Поиски</Link>
-      <Link href="/account/messages">
+      <Link prefetch={false} href="/account/favorites">
+        Избранное
+      </Link>
+      <Link prefetch={false} href="/account/saved-searches">
+        Поиски
+      </Link>
+      <Link prefetch={false} href="/account/messages">
         Сообщения
         {messageCount ? ` (${messageCount > 99 ? '99+' : messageCount})` : ''}
       </Link>
-      <Link href="/account/notifications">
+      <Link prefetch={false} href="/account/notifications">
         Уведомления{count ? ` (${count > 99 ? '99+' : count})` : ''}
       </Link>
     </>

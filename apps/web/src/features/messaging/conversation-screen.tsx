@@ -162,7 +162,9 @@ export function ConversationScreen({ id }: { id: string }) {
   return (
     <>
       <p>
-        <Link href="/account/messages">Все диалоги</Link>
+        <Link prefetch={false} href="/account/messages">
+          Все диалоги
+        </Link>
       </p>
       <h1>{title}</h1>
       {error ? (

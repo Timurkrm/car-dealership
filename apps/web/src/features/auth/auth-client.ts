@@ -58,6 +58,7 @@ type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
 type RefreshLock = (work: () => Promise<void>) => Promise<void>;
 /** Credentials live only in this instance. No browser storage, URLs or logging. */
 export class AuthClient {
+  private readonly fetcher: Fetcher;
   private accessToken: string | null = null;
   private refreshFlight: Promise<void> | null = null;
   private bootstrapFlight: Promise<void> | null = null;
@@ -65,9 +66,13 @@ export class AuthClient {
   private snapshot: AuthSnapshot = INITIAL_AUTH;
   private readonly listeners = new Set<() => void>();
   constructor(
-    private readonly fetcher: Fetcher = fetch,
+    fetcher: Fetcher = fetch,
     private readonly lock: RefreshLock = (work) => work(),
-  ) {}
+  ) {
+    // Browser fetch is a host function and must not inherit AuthClient as its
+    // receiver. A neutral wrapper also makes injected transports predictable.
+    this.fetcher = (input, init) => fetcher(input, init);
+  }
   getSnapshot = (): AuthSnapshot => this.snapshot;
   getServerSnapshot = (): AuthSnapshot => INITIAL_AUTH;
   subscribe = (listener: () => void): (() => void) => {

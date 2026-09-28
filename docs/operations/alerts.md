@@ -1,8 +1,10 @@
 # Alert recommendations
 
-These are conditions for the future monitoring platform. No alerting backend is
-installed, so this document does not claim that any alert currently pages an operator.
-Thresholds need baseline data from staging/load tests and production traffic.
+The API exposes the application-side signals documented in
+[monitoring.md](monitoring.md), and example Prometheus rules live under
+`infra/prometheus`. No external alerting backend is configured, so this document does
+not claim that an operator is currently paged. Thresholds still require target-staging
+baseline data and approved objectives.
 
 | Signal           | Recommended condition                                                                                       | Why / response                                                     |
 | ---------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
@@ -27,7 +29,8 @@ Use bounded labels: service, environment, operation, route template, result and 
 Never label/log query strings, raw coordinates, email, user ID, message body, tokens or
 storage keys. Preserve `requestId`, durable entity/job ID and operation for correlation.
 
-The next testing stage should establish practical latency/error/backlog thresholds via
-load and soak tests. Database/provider alerts also belong in their managed-service
-monitoring because an application process cannot observe disk, replication and quota
-health reliably.
+Target staging must validate practical latency/error/backlog thresholds and the real
+alert route. Database/provider alerts also belong in their managed-service monitoring
+because an application process cannot observe disk, replication and quota health
+reliably. Every routed alert must link to the specific response section in
+[the operations runbook](runbook.md).

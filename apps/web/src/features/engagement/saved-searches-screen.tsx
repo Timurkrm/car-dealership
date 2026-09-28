@@ -63,6 +63,7 @@ export function SavedSearchesScreen() {
                 <>
                   <p>
                     <Link
+                      prefetch={false}
                       href={`${item.type === 'VEHICLE' ? '/cars' : '/parts'}?${serializeSearchParameters(item.filters)}`}
                     >
                       Открыть поиск

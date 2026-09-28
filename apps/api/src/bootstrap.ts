@@ -9,6 +9,7 @@ import { requestMiddleware } from './platform/http/request-context';
 import { ApiExceptionFilter } from './platform/http/api-exception.filter';
 import { validationPipe } from './platform/http/validation';
 import { ApiErrorResponse } from './platform/http/api-error';
+import { MetricsRegistry } from './platform/observability/metrics.registry';
 
 export function configureApp(app: INestApplication, config: AppConfig): void {
   const logger = app.get(StructuredLogger);
@@ -19,7 +20,13 @@ export function configureApp(app: INestApplication, config: AppConfig): void {
     express.set('trust proxy', config.runtime.trustProxyHops);
   }
   app.useLogger(logger);
-  app.use(requestMiddleware(logger, config.runtime.slowRequestMs));
+  app.use(
+    requestMiddleware(
+      logger,
+      config.runtime.slowRequestMs,
+      app.get(MetricsRegistry),
+    ),
+  );
   app.use(helmet());
   app.enableCors({
     origin: config.webUrl,
@@ -44,7 +51,7 @@ export function configureApp(app: INestApplication, config: AppConfig): void {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder()
-        .setTitle('Vehicle Marketplace API')
+        .setTitle('Automotive Marketplace API')
         .setDescription(
           'Cars and Parts marketplace with browser authentication, private media, Search/Geo/Map, moderation and administration.',
         )

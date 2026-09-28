@@ -1,0 +1,63 @@
+groups:
+  - name: automotive-marketplace
+    rules:
+      - alert: MarketplaceApiTargetMissing
+        expr: up{job="automotive-marketplace-api"} == 0
+        for: 2m
+        labels:
+          severity: p1
+        annotations:
+          summary: Automotive Marketplace API metrics target is unavailable
+          runbook: docs/operations/runbook.md#incident-checklist
+
+      - alert: MarketplaceHttp5xxRatioHigh
+        expr: >-
+          sum(rate(marketplace_http_requests_total{status_class="5xx"}[5m]))
+          /
+          clamp_min(sum(rate(marketplace_http_requests_total[5m])), 0.001)
+          > 0.05
+        for: 10m
+        labels:
+          severity: p2
+        annotations:
+          summary: Automotive Marketplace HTTP 5xx ratio exceeds bootstrap threshold
+          runbook: docs/operations/runbook.md#incident-checklist
+
+      - alert: MarketplaceDatabasePoolWaiting
+        expr: marketplace_db_pool_connections{state="waiting"} > 0
+        for: 5m
+        labels:
+          severity: p2
+        annotations:
+          summary: Automotive Marketplace database pool has sustained waiters
+          runbook: docs/operations/runbook.md#table-and-index-maintenance
+
+      - alert: MarketplaceOutboxBacklogOld
+        expr: marketplace_outbox_oldest_pending_seconds > 300
+        for: 10m
+        labels:
+          severity: p2
+        annotations:
+          summary: Automotive Marketplace outbox backlog is older than five minutes
+          runbook: docs/operations/runbook.md#dependency-incidents
+
+      - alert: MarketplaceDeliveryBacklogOld
+        expr: marketplace_delivery_oldest_pending_seconds > 600
+        for: 10m
+        labels:
+          severity: p2
+        annotations:
+          summary: Automotive Marketplace email delivery backlog is old
+          runbook: docs/operations/runbook.md#dependency-incidents
+
+      - alert: MarketplaceDurableFailuresPresent
+        expr: >-
+          marketplace_outbox_items{state="failed"}
+          + marketplace_delivery_items{state="failed"}
+          + marketplace_media_items{state="failed"} > 0
+        for: 15m
+        labels:
+          severity: p2
+        annotations:
+          summary: Automotive Marketplace has durable failed work
+          runbook: docs/operations/runbook.md#dependency-incidents

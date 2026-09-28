@@ -76,34 +76,33 @@ test('messaging client exposes the server-authoritative read-only state', async 
   assert.equal(detail.listing.kind, 'UNAVAILABLE');
 });
 
-test('realtime client refreshes once after a server disconnect and logout clears the socket', async () => {
-  const previous = process.env.NEXT_PUBLIC_API_URL;
-  process.env.NEXT_PUBLIC_API_URL = 'http://api.example.test';
+test('realtime client uses browser origin, refreshes once and logout clears the socket', async () => {
   const socket = new FakeSocket();
   const forced: boolean[] = [];
+  let socketUrl = '';
   const client = new RealtimeClient(
     async (force) => {
       forced.push(force === true);
       return 'access-token';
     },
-    () => socket as unknown as Socket,
+    (url) => {
+      socketUrl = url;
+      return socket as unknown as Socket;
+    },
+    () => 'https://marketplace.example.test',
   );
-  try {
-    await client.connect();
-    assert.equal(socket.connectCount, 1);
-    socket.trigger('disconnect', 'io server disconnect');
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.deepEqual(forced, [true]);
-    assert.equal(socket.connectCount, 2);
-    socket.trigger('disconnect', 'io server disconnect');
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.deepEqual(forced, [true]);
-    client.disconnect();
-    assert.equal(socket.disconnectCount, 1);
-  } finally {
-    if (previous === undefined) delete process.env.NEXT_PUBLIC_API_URL;
-    else process.env.NEXT_PUBLIC_API_URL = previous;
-  }
+  await client.connect();
+  assert.equal(socketUrl, 'https://marketplace.example.test/realtime');
+  assert.equal(socket.connectCount, 1);
+  socket.trigger('disconnect', 'io server disconnect');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(forced, [true]);
+  assert.equal(socket.connectCount, 2);
+  socket.trigger('disconnect', 'io server disconnect');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(forced, [true]);
+  client.disconnect();
+  assert.equal(socket.disconnectCount, 1);
 });
 
 test('optimistic and durable realtime copies merge by client id and remain ordered', () => {

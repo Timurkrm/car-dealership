@@ -17,6 +17,9 @@ export interface AppConfig {
   webUrl: string;
   swagger: boolean;
   logLevel: LogLevel;
+  observability: {
+    metricsEnabled: boolean;
+  };
   runtime: {
     shutdownTimeoutMs: number;
     slowRequestMs: number;
@@ -149,6 +152,9 @@ export function parseConfig(env: NodeJS.ProcessEnv): AppConfig {
     port: port('API_PORT'),
     webUrl: url('WEB_URL') ?? '',
     logLevel: logLevel as LogLevel,
+    observability: {
+      metricsEnabled: boolean('METRICS_ENABLED', false),
+    },
     swagger: boolean('SWAGGER_ENABLED', environment === 'development'),
     runtime: {
       shutdownTimeoutMs: boundedInteger(
@@ -299,6 +305,13 @@ export function workspaceRoot(): string {
 
 export function loadConfig(environment?: Environment): AppConfig {
   if (environment) process.env.NODE_ENV = environment;
+  // Production containers receive configuration from the orchestrator/secret
+  // manager and intentionally do not contain the repository or a local .env.
+  if (
+    process.env.NODE_ENV === 'production' ||
+    process.env.CONFIG_FROM_ENV === 'true'
+  )
+    return parseConfig(process.env);
   const file = join(
     workspaceRoot(),
     process.env.NODE_ENV === 'test' ? '.env.test' : '.env',

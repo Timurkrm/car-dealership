@@ -15,6 +15,15 @@ const json = (value: unknown, status = 200) =>
     status,
     headers: { 'content-type': 'application/json' },
   });
+test('transport is invoked without AuthClient as a browser-host receiver', async () => {
+  function transport(this: unknown, path: string): Promise<Response> {
+    assert.equal(this, undefined);
+    assert.equal(path, '/api/v1/catalog/vehicle-makes?limit=1');
+    return Promise.resolve(json({ items: [], hasMore: false }));
+  }
+  const client = new AuthClient(transport);
+  await client.api('catalog/vehicle-makes?limit=1');
+});
 test('successful reset clears the previously authenticated browser identity', async () => {
   const client = new AuthClient(async (path) => {
     if (path.endsWith('refresh'))

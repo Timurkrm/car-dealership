@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import type { StructuredLogger } from '../logging/structured-logger';
+import type { MetricsRegistry } from '../observability/metrics.registry';
 
 export const requestContext = new AsyncLocalStorage<{ requestId: string }>();
 export function resolveRequestId(value: unknown): string {
@@ -12,6 +13,7 @@ export function resolveRequestId(value: unknown): string {
 export function requestMiddleware(
   logger: StructuredLogger,
   slowRequestMs = Number.POSITIVE_INFINITY,
+  metrics?: Pick<MetricsRegistry, 'observeHttp'>,
 ) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const requestId = resolveRequestId(req.headers['x-request-id']);
@@ -20,6 +22,7 @@ export function requestMiddleware(
     res.on('finish', () => {
       const durationMs = Math.round(performance.now() - start);
       const route = routeTemplate(req);
+      metrics?.observeHttp(req.method, route, res.statusCode, durationMs);
       const fields = {
         requestId,
         operation: `http_${req.method.toLowerCase()}`,

@@ -113,6 +113,7 @@ export function FavoritesScreen() {
                   </span>
                   <h2>
                     <Link
+                      prefetch={false}
                       href={`${item.kind === 'PART' ? '/parts' : '/listings'}/${item.listingId}`}
                     >
                       {item.title}

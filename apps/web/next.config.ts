@@ -9,11 +9,12 @@ const envPath = resolve(process.cwd(), '../../.env');
 if (existsSync(envPath)) loadEnvFile(envPath);
 const serverConfig = webConfig();
 const config: NextConfig = {
+  output: 'standalone',
+  outputFileTracingRoot: resolve(process.cwd(), '../..'),
   poweredByHeader: false,
   reactStrictMode: true,
   // Root AGENTS.md owns repository rules; do not generate competing local files.
   agentRules: false,
-  env: { NEXT_PUBLIC_API_URL: serverConfig.apiUrl },
   rewrites: async () => [
     {
       source: '/api/v1/:path*',
@@ -24,8 +25,8 @@ const config: NextConfig = {
     {
       source: '/:path*',
       headers: webSecurityHeaders(
-        serverConfig.apiUrl,
         process.env.NEXT_PUBLIC_MAP_STYLE_URL,
+        process.env.S3_ENDPOINT,
       ),
     },
   ],

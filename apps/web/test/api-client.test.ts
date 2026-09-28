@@ -19,10 +19,10 @@ test('server configuration rejects missing, credential-bearing and invalid API o
 });
 test('web security headers constrain framing, content and provider connections', () => {
   const headers = Object.fromEntries(
-    webSecurityHeaders(
-      'https://api.example.test',
-      'https://maps.example.test/style.json',
-    ).map((header) => [header.key.toLowerCase(), header.value]),
+    webSecurityHeaders('https://maps.example.test/style.json').map((header) => [
+      header.key.toLowerCase(),
+      header.value,
+    ]),
   );
   assert.equal(headers['x-content-type-options'], 'nosniff');
   assert.equal(headers['referrer-policy'], 'no-referrer');
@@ -31,11 +31,9 @@ test('web security headers constrain framing, content and provider connections',
   assert.ok(
     headers['content-security-policy']?.includes("frame-ancestors 'none'"),
   );
-  assert.ok(
-    headers['content-security-policy']?.includes('https://api.example.test'),
-  );
-  assert.ok(
-    headers['content-security-policy']?.includes('wss://api.example.test'),
+  assert.equal(
+    headers['content-security-policy']?.includes('api.internal'),
+    false,
   );
   assert.ok(
     headers['content-security-policy']?.includes('https://maps.example.test'),

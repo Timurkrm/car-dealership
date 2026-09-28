@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "roles": ["ANONYMOUS", "USER", "MODERATOR", "ADMIN"],
+  "resources": {
+    "publicSearchAndDetails": ["ANONYMOUS", "USER", "MODERATOR", "ADMIN"],
+    "ownListingsAndMedia": ["OWNER"],
+    "favoriteSavedSearchMessaging": ["AUTHENTICATED_PARTICIPANT"],
+    "moderationQueuesAndActions": ["MODERATOR", "ADMIN"],
+    "userRoleAndStatusAdministration": ["ADMIN"],
+    "auditRead": ["ADMIN"]
+  },
+  "expectedDenial": {
+    "anonymous": 401,
+    "wrongRole": 403,
+    "wrongOwnerOrParticipant": 404
+  }
+}

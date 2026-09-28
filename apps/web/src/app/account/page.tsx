@@ -1,4 +1,5 @@
 import { AccountNavigation } from '../../features/account/account-navigation';
+import { AccountLogout } from '../../features/account/account-logout';
 import { EngagementBoundary } from '../../features/engagement/engagement-boundary';
 export default function AccountPage() {
   return (
@@ -7,6 +8,7 @@ export default function AccountPage() {
       <EngagementBoundary>
         <p>Управляйте профилем, безопасностью и уведомлениями.</p>
         <AccountNavigation />
+        <AccountLogout />
       </EngagementBoundary>
     </main>
   );

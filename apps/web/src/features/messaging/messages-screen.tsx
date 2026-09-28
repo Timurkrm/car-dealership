@@ -68,7 +68,7 @@ export function MessagesScreen() {
       <ul className="conversation-list">
         {items.map((item) => (
           <li key={item.id}>
-            <Link href={`/account/messages/${item.id}`}>
+            <Link prefetch={false} href={`/account/messages/${item.id}`}>
               <strong>{listingTitle(item.listing)}</strong>
               <span>{item.otherParticipant.displayName}</span>
               <span>

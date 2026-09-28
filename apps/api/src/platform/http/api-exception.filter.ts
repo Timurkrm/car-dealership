@@ -4,6 +4,7 @@ import type { Response } from 'express';
 import { ApiException } from './api-error';
 import type { StructuredLogger } from '../logging/structured-logger';
 import { requestContext } from './request-context';
+import { isDatabaseUnavailable } from '../database/database-unavailable';
 
 const errors: Record<number, [string, string]> = {
   400: ['BAD_REQUEST', 'Invalid request'],
@@ -38,8 +39,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
   constructor(private readonly logger: StructuredLogger) {}
   catch(exception: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
-    const status =
-      exception instanceof HttpException
+    const status = isDatabaseUnavailable(exception)
+      ? 503
+      : exception instanceof HttpException
         ? exception.getStatus()
         : (parserStatus(exception) ?? 500);
     const fallback = errors[status] ?? [

@@ -30,8 +30,31 @@ import {
 import { RedisConnection } from '../../src/platform/redis/redis.connection';
 import { StructuredLogger } from '../../src/platform/logging/structured-logger';
 import type { Request } from 'express';
+import type { DataSource, EntityManager } from 'typeorm';
+import { AuthPersistence } from '../../src/modules/auth/infrastructure/persistence/auth.persistence';
 
 const config = parseConfig(testEnvironment());
+test('new sessions use one database clock for created and last-used timestamps', async () => {
+  let sql = '';
+  let parameters: unknown[] = [];
+  const persistence = new AuthPersistence({} as DataSource);
+  await persistence.createSession(
+    {
+      id: randomUUID(),
+      userId: randomUUID(),
+      expiresAt: new Date('2027-01-01T00:00:00Z'),
+    },
+    {
+      query: (statement: string, values: unknown[]) => {
+        sql = statement;
+        parameters = values;
+        return Promise.resolve([]);
+      },
+    } as unknown as EntityManager,
+  );
+  assert.match(sql, /last_used_at[\s\S]*CURRENT_TIMESTAMP/);
+  assert.equal(parameters.length, 3);
+});
 test('password policy counts Unicode code points, preserves whitespace and bounds expensive input', () => {
   for (const password of [
     'a'.repeat(15),

@@ -1,0 +1,94 @@
+name: Browser and load QA
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '41 2 * * 2'
+  workflow_dispatch:
+    inputs:
+      load_profile:
+        description: Optional load profile
+        required: false
+        type: choice
+        options: ['', smoke, baseline, stress, soak, workers, fault]
+permissions:
+  contents: read
+concurrency:
+  group: qa-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  security-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run security:secrets
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:chromium
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-chromium
+          path: |
+            playwright-report/
+            test-results/
+            qa-results/
+  browser-matrix:
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-matrix
+          path: |
+            playwright-report/
+            test-results/
+            qa-results/
+  load-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npm ci
+      - run: npm run load:smoke
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with: { name: load-smoke, path: qa-results/ }
+  requested-load:
+    if: github.event_name == 'workflow_dispatch' && inputs.load_profile != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npm ci
+      - run: npm run load:${{ inputs.load_profile }}
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: load-${{ inputs.load_profile }}
+          path: qa-results/

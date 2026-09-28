@@ -1,11 +1,12 @@
 export function webSecurityHeaders(
-  apiUrl: string,
   mapStyleUrl?: string,
+  mediaOriginUrl?: string,
 ): Array<{ key: string; value: string }> {
-  const apiOrigin = new URL(apiUrl).origin;
-  const websocketOrigin = apiOrigin.replace(/^http/, 'ws');
   const mapOrigin = mapStyleUrl ? new URL(mapStyleUrl).origin : undefined;
-  const connectSources = ["'self'", apiOrigin, websocketOrigin, mapOrigin]
+  const mediaOrigin = mediaOriginUrl
+    ? new URL(mediaOriginUrl).origin
+    : undefined;
+  const connectSources = ["'self'", mapOrigin]
     .filter((value): value is string => Boolean(value))
     .join(' ');
   const contentSecurityPolicy = [
@@ -17,7 +18,7 @@ export function webSecurityHeaders(
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     `connect-src ${connectSources}`,
-    "img-src 'self' data: blob: https:",
+    `img-src 'self' data: blob: https:${mediaOrigin ? ` ${mediaOrigin}` : ''}`,
     "font-src 'self' data: https:",
     "worker-src 'self' blob:",
   ].join('; ');

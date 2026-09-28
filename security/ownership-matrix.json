@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "checks": [
+    {
+      "resource": "vehicleListing",
+      "owner": "sellerId",
+      "foreignActor": "404"
+    },
+    { "resource": "partListing", "owner": "sellerId", "foreignActor": "404" },
+    {
+      "resource": "listingMedia",
+      "owner": "listing.sellerId",
+      "foreignActor": "404"
+    },
+    {
+      "resource": "conversation",
+      "owner": "participant",
+      "foreignActor": "404"
+    },
+    {
+      "resource": "message",
+      "owner": "conversation participant",
+      "foreignActor": "404"
+    },
+    { "resource": "favorite", "owner": "userId", "foreignActor": "404" },
+    { "resource": "savedSearch", "owner": "userId", "foreignActor": "404" },
+    { "resource": "notification", "owner": "userId", "foreignActor": "404" },
+    { "resource": "session", "owner": "userId", "foreignActor": "404" }
+  ]
+}

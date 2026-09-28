@@ -1,10 +1,13 @@
 {
   "name": "@marketplace/web",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.1",
   "private": true,
   "scripts": {
+    "predev": "node ../../scripts/sync-maplibre-worker.mjs",
     "dev": "node ../../scripts/web.mjs dev",
+    "prebuild": "node ../../scripts/sync-maplibre-worker.mjs",
     "build": "next build",
+    "prestart": "node ../../scripts/sync-maplibre-worker.mjs",
     "start": "node ../../scripts/web.mjs start",
     "typecheck": "next typegen && tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "tsc -p tsconfig.test.json && node --test .test-build/test/*.test.js"

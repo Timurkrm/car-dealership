@@ -96,6 +96,7 @@ export function MarketplaceMap(props: MarketplaceMapProps) {
     void import('maplibre-gl')
       .then((maplibre) => {
         if (disposed || !container.current) return;
+        maplibre.setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
         const instance = new maplibre.Map({
           container: container.current,
           style: styleUrl,
