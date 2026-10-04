@@ -10,13 +10,19 @@ export function WorkspaceNavigation() {
   return (
     <>
       {canModerate(user.roles) ? (
-        <Link href="/moderation">Модерация</Link>
+        <Link prefetch={false} href="/moderation">
+          Модерация
+        </Link>
       ) : null}
       {canAdminister(user.roles) ? (
-        <Link href="/admin/users">Пользователи</Link>
+        <Link prefetch={false} href="/admin/users">
+          Пользователи
+        </Link>
       ) : null}
       {canAdminister(user.roles) ? (
-        <Link href="/admin/audit">Аудит</Link>
+        <Link prefetch={false} href="/admin/audit">
+          Аудит
+        </Link>
       ) : null}
     </>
   );

@@ -1,0 +1,83 @@
+:root {
+  color-scheme: light;
+  --color-bg: #f6f8fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef2f7;
+  --color-text: #202b3d;
+  --color-text-secondary: #4d5c70;
+  --color-text-muted: #596a80;
+  --color-border: #dce3ed;
+  --color-border-strong: #7a8ba1;
+  --color-primary: #2456d6;
+  --color-primary-hover: #1946b8;
+  --color-primary-active: #163992;
+  --color-primary-soft: #edf2ff;
+  --color-on-primary: #ffffff;
+  --color-success: #176341;
+  --color-success-soft: #edf8f1;
+  --color-warning: #815000;
+  --color-warning-soft: #fff7e5;
+  --color-danger: #b42332;
+  --color-danger-hover: #941d29;
+  --color-danger-soft: #fff0f1;
+  --color-info: #2456a3;
+  --color-info-soft: #eef4ff;
+  --color-focus: #2456d6;
+  --color-backdrop: rgb(20 31 49 / 48%);
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --text-display: clamp(2.25rem, 4vw, 3.25rem);
+  --text-h1: clamp(1.875rem, 3vw, 2.5rem);
+  --text-h2: clamp(1.5rem, 2.5vw, 1.875rem);
+  --text-h3: clamp(1.25rem, 2vw, 1.5rem);
+  --text-body: 1rem;
+  --text-small: 0.875rem;
+  --text-caption: 0.8125rem;
+  --text-price: clamp(1.25rem, 2vw, 1.5rem);
+  --leading-heading: 1.2;
+  --leading-body: 1.6;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-dialog: 1.25rem;
+  --radius-pill: 999px;
+  --shadow-sm: 0 2px 6px rgb(20 31 49 / 4%);
+  --shadow-md: 0 6px 20px rgb(20 31 49 / 8%);
+  --shadow-dialog: 0 16px 48px rgb(20 31 49 / 18%);
+  --container-public: 90rem;
+  --container-content: 75rem;
+  --container-form: 44rem;
+  --page-gutter: var(--space-4);
+  --control-height: 2.75rem;
+  --panel-space: var(--space-6);
+  --transition-fast: 180ms;
+  --header-height: 4.5rem;
+  --layer-header: 20;
+  --layer-skip: 30;
+}
+
+/* Breakpoints are literal because custom properties cannot define media queries. */
+@media (min-width: 48rem) {
+  :root {
+    --page-gutter: var(--space-6);
+  }
+}
+@media (min-width: 64rem) {
+  :root {
+    --page-gutter: var(--space-8);
+  }
+}

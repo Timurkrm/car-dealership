@@ -6,7 +6,7 @@ import type {
   PublicListingSummary,
   Vehicle,
 } from './listing-types';
-import { STATUS_LABELS } from './listing-types';
+import { ListingStatusBadge } from './listing-status-badge';
 import { decimalFromMinor } from './listing-form-model';
 
 export function ListingDescription({
@@ -101,8 +101,11 @@ export function ListingCard({
         </p>
       )}
       <p>
-        {decimalFromMinor(listing.price.amountMinor, listing.price.currency)}{' '}
-        {listing.price.currency} · {STATUS_LABELS[listing.status]}
+        <span className="ui-price">
+          {decimalFromMinor(listing.price.amountMinor, listing.price.currency)}{' '}
+          {listing.price.currency}
+        </span>{' '}
+        <ListingStatusBadge status={listing.status} />
       </p>
       {owner && 'updatedAt' in listing && (
         <p>

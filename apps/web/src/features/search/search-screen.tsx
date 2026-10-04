@@ -17,7 +17,8 @@ import {
   serializeSearchParameters,
 } from './search-parameters';
 import { SearchFilters } from './search-filters';
-import { SearchCard } from './search-card';
+import { MarketplaceResult } from '../results/marketplace-result';
+import { ResultLayout, ResultLoading } from '../results/result-layout';
 import { SearchFacetSummary } from './search-facets';
 import type { PrivateSearchOrigin } from './search-parameters';
 import {
@@ -29,6 +30,8 @@ import {
 } from '../map/map-state';
 import { MarketplaceMapExperience } from '../map/marketplace-map-experience';
 import { SaveSearchButton } from '../engagement/save-search-button';
+import { EmptyState } from '../../components/ui/feedback';
+import { Button } from '../../components/ui/button';
 
 export function SearchResults({
   state,
@@ -46,22 +49,29 @@ export function SearchResults({
   return (
     <section aria-label="Результаты поиска" aria-busy={state.loading}>
       {state.loading && <p role="status">Ищем автомобили…</p>}
+      {state.loading && state.items.length === 0 && <ResultLoading />}
       <ListingError error={state.error} />
       {!state.loading && !state.error && state.items.length === 0 && (
-        <p>
-          По вашему запросу ничего не найдено.{' '}
-          <button onClick={onReset}>Сбросить фильтры</button>
-        </p>
-      )}
-      {state.items.map((listing) => (
-        <SearchCard
-          key={listing.id}
-          listing={listing}
-          selected={listing.id === selectedId}
-          onSelect={onSelect}
-          onNavigate={onNavigate}
+        <EmptyState
+          title="По вашему запросу ничего не найдено"
+          action={
+            <Button variant="outline" onClick={onReset}>
+              Сбросить фильтры
+            </Button>
+          }
         />
-      ))}
+      )}
+      <ResultLayout>
+        {state.items.map((listing) => (
+          <MarketplaceResult
+            key={listing.id}
+            listing={listing}
+            selected={listing.id === selectedId}
+            onSelect={onSelect}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </ResultLayout>
     </section>
   );
 }

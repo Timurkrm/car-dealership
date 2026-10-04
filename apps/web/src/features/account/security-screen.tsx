@@ -1,8 +1,13 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../auth/auth-provider';
 import { AccountClient, type AccountSession } from './account-client';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/field';
+import { Alert } from '../../components/ui/feedback';
+import { LoadingState } from '../../components/ui/loading';
+import { ConfirmationDialog } from '../../components/ui/dialog';
 
 const date = (value: string) =>
   new Intl.DateTimeFormat('ru', {
@@ -19,6 +24,10 @@ export function SecurityScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
+  const confirmationTrigger = useRef<HTMLButtonElement>(null);
+  const [confirmation, setConfirmation] = useState<
+    AccountSession | 'others' | null
+  >(null);
   useEffect(() => {
     const controller = new AbortController();
     void api
@@ -73,11 +82,11 @@ export function SecurityScreen() {
           <fieldset disabled={busy}>
             <label>
               Новый email
-              <input name="newEmail" type="email" required maxLength={254} />
+              <Input name="newEmail" type="email" required maxLength={254} />
             </label>
             <label>
               Текущий пароль
-              <input
+              <Input
                 name="currentPassword"
                 type="password"
                 autoComplete="current-password"
@@ -85,7 +94,9 @@ export function SecurityScreen() {
                 maxLength={256}
               />
             </label>
-            <button>Отправить подтверждение</button>
+            <Button type="submit" loading={busy}>
+              Отправить подтверждение
+            </Button>
           </fieldset>
         </form>
       </section>
@@ -114,7 +125,7 @@ export function SecurityScreen() {
           <fieldset disabled={busy}>
             <label>
               Текущий пароль
-              <input
+              <Input
                 name="currentPassword"
                 type="password"
                 autoComplete="current-password"
@@ -124,7 +135,7 @@ export function SecurityScreen() {
             </label>
             <label>
               Новый пароль
-              <input
+              <Input
                 name="newPassword"
                 type="password"
                 autoComplete="new-password"
@@ -135,7 +146,7 @@ export function SecurityScreen() {
             </label>
             <label>
               Повторите новый пароль
-              <input
+              <Input
                 name="confirmPassword"
                 type="password"
                 autoComplete="new-password"
@@ -144,14 +155,16 @@ export function SecurityScreen() {
                 minLength={15}
               />
             </label>
-            <button>Сменить пароль</button>
+            <Button type="submit" loading={busy}>
+              Сменить пароль
+            </Button>
           </fieldset>
         </form>
       </section>
       <section className="settings-panel">
         <h2>Активные сеансы</h2>
         {loading ? (
-          <p role="status">Загружаем сеансы…</p>
+          <LoadingState label="Загружаем сеансы…" />
         ) : (
           <>
             <ul className="session-list">
@@ -165,54 +178,70 @@ export function SecurityScreen() {
                     <span>Создан: {date(session.createdAt)}</span>
                     <span>Истекает: {date(session.expiresAt)}</span>
                   </div>
-                  <button
-                    className={session.current ? 'danger-button' : undefined}
+                  <Button
+                    variant={session.current ? 'danger' : 'outline'}
                     disabled={busy}
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          session.current
-                            ? 'Завершить текущий сеанс и выйти?'
-                            : 'Завершить этот сеанс?',
-                        )
-                      )
-                        return;
-                      void run(async () => {
-                        await api.revokeSession(session.id, session.current);
-                        if (session.current) {
-                          router.replace('/login');
-                          return;
-                        }
-                        setSessions((current) =>
-                          current.filter((item) => item.id !== session.id),
-                        );
-                      }, 'Сеанс завершён.');
+                    onClick={(event) => {
+                      confirmationTrigger.current = event.currentTarget;
+                      setConfirmation(session);
                     }}
                   >
                     Завершить сеанс
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
-            <button
+            <Button
+              variant="outline"
               disabled={busy || sessions.every((session) => session.current)}
-              onClick={() => {
-                if (!window.confirm('Завершить все остальные сеансы?')) return;
-                void run(async () => {
-                  await api.revokeOthers();
-                  setSessions((current) =>
-                    current.filter((item) => item.current),
-                  );
-                }, 'Остальные сеансы завершены.');
+              onClick={(event) => {
+                confirmationTrigger.current = event.currentTarget;
+                setConfirmation('others');
               }}
             >
               Завершить остальные сеансы
-            </button>
+            </Button>
           </>
         )}
       </section>
-      {status && <p role="status">{status}</p>}
-      {error && <p role="alert">{error}</p>}
+      {status && <Alert tone="success">{status}</Alert>}
+      {error && <Alert tone="error">{error}</Alert>}
+      <ConfirmationDialog
+        returnFocusRef={confirmationTrigger}
+        open={confirmation !== null}
+        onClose={() => setConfirmation(null)}
+        title={
+          confirmation === 'others'
+            ? 'Завершить все остальные сеансы?'
+            : confirmation?.current
+              ? 'Завершить текущий сеанс и выйти?'
+              : 'Завершить этот сеанс?'
+        }
+        description="На устройствах с завершённым сеансом потребуется снова войти в аккаунт."
+        confirmLabel="Завершить"
+        onConfirm={() => {
+          const selected = confirmation;
+          if (!selected) return;
+          setConfirmation(null);
+          if (selected === 'others') {
+            void run(async () => {
+              await api.revokeOthers();
+              setSessions((current) => current.filter((item) => item.current));
+            }, 'Остальные сеансы завершены.');
+          } else {
+            void run(async () => {
+              await api.revokeSession(selected.id, selected.current);
+              if (selected.current) {
+                router.replace('/login');
+                return;
+              }
+              setSessions((current) =>
+                current.filter((item) => item.id !== selected.id),
+              );
+            }, 'Сеанс завершён.');
+          }
+        }}
+      />
     </div>
   );
 }

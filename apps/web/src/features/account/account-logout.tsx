@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useAuth } from '../auth/auth-provider';
+import { Button } from '../../components/ui/button';
+import { Alert } from '../../components/ui/feedback';
 
 export function AccountLogout() {
   const { client } = useAuth();
@@ -12,9 +14,10 @@ export function AccountLogout() {
 
   return (
     <div className="auth-actions">
-      <button
+      <Button
+        variant="outline"
         type="button"
-        disabled={busy}
+        loading={busy}
         onClick={async () => {
           setBusy(true);
           setError('');
@@ -27,9 +30,9 @@ export function AccountLogout() {
           }
         }}
       >
-        {busy ? 'Выходим…' : 'Выйти'}
-      </button>
-      {error && <p role="alert">{error}</p>}
+        Выйти
+      </Button>
+      {error && <Alert tone="error">{error}</Alert>}
     </div>
   );
 }

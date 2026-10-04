@@ -28,7 +28,9 @@ export function PartDetailScreen({ id }: { id: string }) {
   const listing = result.value;
   return (
     <main id="main">
-      <Link href="/parts">Все запчасти</Link>
+      <Link prefetch={false} href="/parts">
+        Все запчасти
+      </Link>
       <h1>{listing?.title ?? 'Запчасть'}</h1>
       {result.loading && <p role="status">Загружаем запчасть…</p>}
       <ListingError error={result.error} />

@@ -6,6 +6,11 @@ import type { FormEvent } from 'react';
 import { AuthApiError } from './auth-client';
 import { useAuth } from './auth-provider';
 import { safeReturnTo } from './auth-return';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/field';
+import { Alert } from '../../components/ui/feedback';
+import { Card } from '../../components/ui/card';
+import { Container, PageHeader } from '../../components/ui/layout';
 
 type FormKind =
   'login' | 'register' | 'forgot-password' | 'reset-password' | 'verify-email';
@@ -134,82 +139,85 @@ export function AuthForm({ kind }: { kind: FormKind }) {
     }
   }
   return (
-    <main id="main" className="auth-page">
-      <h1>{TITLES[kind]}</h1>
-      {kind === 'verify-email' && (
-        <p>Нажмите кнопку, чтобы подтвердить email из полученного письма.</p>
-      )}
-      <form onSubmit={submit} aria-busy={busy} className="auth-form">
-        <fieldset
-          disabled={busy || Boolean(success && kind !== 'forgot-password')}
-        >
-          {kind === 'register' && (
-            <label>
-              Имя
-              <input
-                name="displayName"
-                autoComplete="name"
-                required
-                maxLength={100}
-              />
-            </label>
-          )}
-          {['login', 'register', 'forgot-password'].includes(kind) && (
-            <label>
-              Email
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                required
-                maxLength={254}
-              />
-            </label>
-          )}
-          {['login', 'register', 'reset-password'].includes(kind) && (
-            <label>
-              Пароль
-              <input
-                type="password"
-                name="password"
-                autoComplete={
-                  kind === 'login' ? 'current-password' : 'new-password'
-                }
-                required
-                maxLength={256}
-                aria-describedby={
-                  kind === 'login' ? undefined : 'password-policy'
-                }
-              />
-            </label>
-          )}
-          {(kind === 'register' || kind === 'reset-password') && (
-            <p id="password-policy">
-              От 15 до 128 символов. Можно использовать длинную парольную фразу.
-            </p>
-          )}
-          <button type="submit">
-            {busy
-              ? 'Выполняем…'
-              : kind === 'verify-email'
+    <Container as="main" id="main" width="form" className="auth-page">
+      <Card>
+        <PageHeader eyebrow="Automotive Marketplace" title={TITLES[kind]} />
+        {kind === 'verify-email' && (
+          <p>Нажмите кнопку, чтобы подтвердить email из полученного письма.</p>
+        )}
+        <form onSubmit={submit} aria-busy={busy} className="auth-form">
+          <fieldset
+            disabled={busy || Boolean(success && kind !== 'forgot-password')}
+          >
+            {kind === 'register' && (
+              <label>
+                Имя
+                <Input
+                  name="displayName"
+                  autoComplete="name"
+                  required
+                  maxLength={100}
+                />
+              </label>
+            )}
+            {['login', 'register', 'forgot-password'].includes(kind) && (
+              <label>
+                Email
+                <Input
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  required
+                  maxLength={254}
+                />
+              </label>
+            )}
+            {['login', 'register', 'reset-password'].includes(kind) && (
+              <label>
+                Пароль
+                <Input
+                  type="password"
+                  name="password"
+                  autoComplete={
+                    kind === 'login' ? 'current-password' : 'new-password'
+                  }
+                  required
+                  maxLength={256}
+                  aria-describedby={
+                    kind === 'login' ? undefined : 'password-policy'
+                  }
+                />
+              </label>
+            )}
+            {(kind === 'register' || kind === 'reset-password') && (
+              <p id="password-policy">
+                От 15 до 128 символов. Можно использовать длинную парольную
+                фразу.
+              </p>
+            )}
+            <Button type="submit" loading={busy}>
+              {kind === 'verify-email'
                 ? 'Подтвердить email'
                 : kind === 'forgot-password'
                   ? 'Получить инструкции'
                   : kind === 'reset-password'
                     ? 'Сохранить пароль'
                     : TITLES[kind]}
-          </button>
-        </fieldset>
-        {error && <p role="alert">{error}</p>}
-        {success && <p role="status">{success}</p>}
-      </form>
-      <nav aria-label="Доступ к аккаунту">
-        <Link href="/login">Вход</Link>
-        <Link href="/register">Регистрация</Link>
-        <Link href="/forgot-password">Забыли пароль?</Link>
-      </nav>
-      {(kind === 'login' || kind === 'verify-email') && <VerificationRequest />}
-    </main>
+            </Button>
+          </fieldset>
+          {error && <Alert tone="error">{error}</Alert>}
+          {success && <Alert tone="success">{success}</Alert>}
+        </form>
+        <nav aria-label="Доступ к аккаунту">
+          <Link href="/login">Вход</Link>
+          <Link href="/register">Регистрация</Link>
+          <Link href="/forgot-password">Забыли пароль?</Link>
+        </nav>
+        {(kind === 'login' || kind === 'verify-email') && (
+          <VerificationRequest />
+        )}
+      </Card>
+    </Container>
   );
 }
 function VerificationRequest() {
@@ -245,7 +253,7 @@ function VerificationRequest() {
       >
         <label>
           Email
-          <input
+          <Input
             type="email"
             name="email"
             autoComplete="email"
@@ -254,11 +262,11 @@ function VerificationRequest() {
             disabled={busy}
           />
         </label>
-        <button disabled={busy}>
-          {busy ? 'Отправляем…' : 'Запросить письмо'}
-        </button>
-        {result && <p role="status">{result}</p>}
-        {error && <p role="alert">{error}</p>}
+        <Button type="submit" loading={busy}>
+          Запросить письмо
+        </Button>
+        {result && <Alert tone="success">{result}</Alert>}
+        {error && <Alert tone="error">{error}</Alert>}
       </form>
     </details>
   );
@@ -369,7 +377,7 @@ export function Account() {
         <fieldset disabled={busy}>
           <label>
             Текущий пароль
-            <input
+            <Input
               type="password"
               name="currentPassword"
               autoComplete="current-password"
@@ -379,7 +387,7 @@ export function Account() {
           </label>
           <label>
             Новый пароль
-            <input
+            <Input
               type="password"
               name="newPassword"
               autoComplete="new-password"
@@ -391,8 +399,8 @@ export function Account() {
           <p id="change-policy">От 15 до 128 символов.</p>
           <button>Сменить пароль</button>
         </fieldset>
-        {success && <p role="status">{success}</p>}
-        {error && <p role="alert">{error}</p>}
+        {success && <Alert tone="success">{success}</Alert>}
+        {error && <Alert tone="error">{error}</Alert>}
       </form>
     </main>
   );

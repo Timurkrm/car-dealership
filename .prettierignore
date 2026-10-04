@@ -8,3 +8,6 @@ AGENTS.md
 apps/web/public/maplibre
 .env*
 **/next-env.d.ts
+playwright-report
+test-results
+qa-results

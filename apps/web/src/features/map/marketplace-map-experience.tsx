@@ -119,7 +119,8 @@ export function MarketplaceMapExperience({
       </div>
       <div className="marketplace-discovery-grid">
         <section className="discovery-list-pane" aria-label="Список объявлений">
-          {renderList(selectedId, select)}
+          {/* List hover/focus updates selection without stealing focus from its controls. */}
+          {renderList(selectedId, setSelectedId)}
         </section>
         <section className="discovery-map-pane" aria-label="Карта результатов">
           <div className="map-toolbar">

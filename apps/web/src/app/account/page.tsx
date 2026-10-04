@@ -1,15 +1,21 @@
 import { AccountNavigation } from '../../features/account/account-navigation';
 import { AccountLogout } from '../../features/account/account-logout';
 import { EngagementBoundary } from '../../features/engagement/engagement-boundary';
+import { Container, PageHeader } from '../../components/ui/layout';
+import { Card } from '../../components/ui/card';
 export default function AccountPage() {
   return (
-    <main id="main" className="workspace-page">
-      <h1>Личный кабинет</h1>
+    <Container as="main" id="main">
+      <PageHeader
+        title="Личный кабинет"
+        description="Управляйте профилем, безопасностью и уведомлениями."
+      />
       <EngagementBoundary>
-        <p>Управляйте профилем, безопасностью и уведомлениями.</p>
-        <AccountNavigation />
-        <AccountLogout />
+        <Card>
+          <AccountNavigation />
+          <AccountLogout />
+        </Card>
       </EngagementBoundary>
-    </main>
+    </Container>
   );
 }

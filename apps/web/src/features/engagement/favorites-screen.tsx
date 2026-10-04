@@ -1,15 +1,17 @@
 'use client';
-import Image from 'next/image';
-import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/auth-provider';
-import { decimalFromMinor } from '../listings/listing-form-model';
+import { FavoriteResult } from '../results/favorite-result';
+import { ResultLayout, ResultLoading } from '../results/result-layout';
+import { EmptyState, ErrorState } from '../../components/ui/feedback';
+import { useFavoriteState } from './favorite-provider';
 import { EngagementClient } from './engagement-client';
 import type { FavoriteItem, ListingType } from './engagement-client';
 
 export function FavoritesScreen() {
   const { client } = useAuth(),
     api = useMemo(() => new EngagementClient(client), [client]);
+  const favoriteState = useFavoriteState();
   const [items, setItems] = useState<FavoriteItem[]>([]),
     [type, setType] = useState<ListingType | undefined>(),
     [cursor, setCursor] = useState<string | null>(null),
@@ -21,6 +23,8 @@ export function FavoritesScreen() {
       setError(false);
       try {
         const result = await api.favorites(type, next, signal);
+        if (signal?.aborted) return;
+        favoriteState.observe(result.items.map((item) => item.listingId));
         setItems((rows) =>
           append ? [...rows, ...result.items] : result.items,
         );
@@ -31,7 +35,7 @@ export function FavoritesScreen() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [api, type],
+    [api, type, favoriteState],
   );
   useEffect(() => {
     const controller = new AbortController();
@@ -64,120 +68,39 @@ export function FavoritesScreen() {
         </label>
       </div>
       {loading && !items.length ? (
-        <p role="status">Загружаем избранное…</p>
+        <>
+          <p role="status">Загружаем избранное…</p>
+          <ResultLoading />
+        </>
       ) : null}
       {error ? (
-        <p role="alert">
-          Не удалось загрузить избранное.{' '}
-          <button onClick={() => void load()}>Повторить</button>
-        </p>
+        <ErrorState
+          title="Не удалось загрузить избранное"
+          description="Попробуйте ещё раз."
+          onRetry={() => void load()}
+        />
       ) : null}
       {!loading && !error && !items.length ? (
-        <p>В избранном пока ничего нет.</p>
+        <EmptyState title="В избранном пока ничего нет." />
       ) : null}
-      <ul className="workspace-card-list">
+      <ResultLayout>
         {items.map((item) => (
-          <li key={item.listingId}>
-            {item.kind === 'UNAVAILABLE' ? (
-              <>
-                <div aria-hidden="true">—</div>
-                <div>
-                  <h2>Объявление недоступно</h2>
-                  <p>
-                    Содержимое скрыто, потому что объявление больше не является
-                    публичным.
-                  </p>
-                  <Remove
-                    id={item.listingId}
-                    api={api}
-                    onDone={() =>
-                      setItems((rows) =>
-                        rows.filter((row) => row.listingId !== item.listingId),
-                      )
-                    }
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <Image
-                  unoptimized
-                  src={item.cover.url}
-                  width={item.cover.width}
-                  height={item.cover.height}
-                  alt=""
-                />
-                <div>
-                  <span className="type-badge">
-                    {item.kind === 'VEHICLE' ? 'Автомобиль' : 'Запчасть'}
-                  </span>
-                  <h2>
-                    <Link
-                      prefetch={false}
-                      href={`${item.kind === 'PART' ? '/parts' : '/listings'}/${item.listingId}`}
-                    >
-                      {item.title}
-                    </Link>
-                  </h2>
-                  <p>
-                    {item.kind === 'VEHICLE'
-                      ? `${item.vehicle?.make.name} ${item.vehicle?.model.name}, ${item.vehicle?.year}`
-                      : `${item.part?.name} · ${item.part?.category.name}`}
-                  </p>
-                  <p>
-                    {decimalFromMinor(
-                      item.price.amountMinor,
-                      item.price.currency,
-                    )}{' '}
-                    {item.price.currency}
-                    {item.availability === 'SOLD' ? ' · Продано' : ''}
-                  </p>
-                  <Remove
-                    id={item.listingId}
-                    api={api}
-                    onDone={() =>
-                      setItems((rows) =>
-                        rows.filter((row) => row.listingId !== item.listingId),
-                      )
-                    }
-                  />
-                </div>
-              </>
-            )}
-          </li>
+          <FavoriteResult
+            key={item.listingId}
+            item={item}
+            onRemoved={() =>
+              setItems((rows) =>
+                rows.filter((row) => row.listingId !== item.listingId),
+              )
+            }
+          />
         ))}
-      </ul>
+      </ResultLayout>
       {cursor ? (
         <button disabled={loading} onClick={() => void load(cursor, true)}>
           Показать ещё
         </button>
       ) : null}
     </>
-  );
-}
-
-function Remove({
-  id,
-  api,
-  onDone,
-}: {
-  id: string;
-  api: EngagementClient;
-  onDone: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  return (
-    <button
-      disabled={busy}
-      onClick={() => {
-        setBusy(true);
-        void api
-          .unfavorite(id)
-          .then(onDone)
-          .finally(() => setBusy(false));
-      }}
-    >
-      Удалить из избранного
-    </button>
   );
 }

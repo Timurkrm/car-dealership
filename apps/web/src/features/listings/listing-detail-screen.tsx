@@ -232,7 +232,9 @@ export function PublicDetailScreen({ id }: { id: string }) {
   return (
     <main id="main">
       <p>
-        <Link href="/cars">Все автомобили</Link>
+        <Link prefetch={false} href="/cars">
+          Все автомобили
+        </Link>
       </p>
       <h1>{listing?.title ?? 'Объявление'}</h1>
       {resource.loading && <p role="status">Загружаем автомобиль…</p>}

@@ -2,16 +2,18 @@
 
 ## 1. Purpose
 
-This repository contains a production-grade multi-category automotive marketplace intended for long-term ownership, scaling, and eventual handoff to a large corporate client.
-
-The product currently supports at least two marketplace categories:
+This repository contains **Automotive Marketplace**, a production-oriented multi-category marketplace for:
 
 - `VEHICLE` — automobiles;
 - `PART` — automotive parts.
 
-The system must remain maintainable, secure, observable, testable, and evolvable without premature distributed-system complexity.
+The system is intended for long-term ownership, scaling, production deployment, and eventual handoff to a large corporate client.
 
-When making changes, optimize for:
+The product is no longer vehicle-only.
+
+Cars and Parts are first-class marketplace categories sharing common platform capabilities while preserving their own domain semantics.
+
+When changing the system, optimize for:
 
 1. correctness;
 2. security;
@@ -22,55 +24,85 @@ When making changes, optimize for:
 7. testability;
 8. observability;
 9. predictable performance;
-10. future scalability.
+10. accessibility;
+11. production operability;
+12. future scalability.
 
-Do not optimize for speed of implementation at the cost of architectural integrity.
+Do not optimize for implementation speed at the expense of architectural integrity.
 
 ---
 
-## 2. Read Before Changing Code
+# 2. Current Product Identity
+
+Use the canonical product name:
+
+```text
+Automotive Marketplace
+```
+
+Avoid reintroducing legacy product naming such as:
+
+```text
+Vehicle Marketplace
+```
+
+where the text refers to the complete Cars + Parts product.
+
+Repository URLs or historical identifiers do not need to be renamed merely for cosmetic consistency.
+
+Cars and Parts must be treated as equal marketplace categories.
+
+---
+
+# 3. Read Before Changing Code
 
 Before modifying an unfamiliar area:
 
 1. inspect the current implementation;
-2. read the relevant documentation under `docs/`;
-3. read the current entities, migrations, tests, and application contracts;
-4. understand existing module ownership;
-5. preserve useful working code;
-6. identify existing invariants before introducing new ones.
+2. read relevant documentation under `docs/`;
+3. inspect entities and migrations;
+4. inspect current API/application contracts;
+5. inspect existing tests;
+6. identify module ownership;
+7. identify existing security/privacy invariants;
+8. identify concurrency rules;
+9. preserve useful working code;
+10. understand current deployment/runtime implications.
 
-Do not rewrite functioning subsystems merely because another implementation style is personally preferred.
+Do not rewrite functioning subsystems because another style is personally preferred.
 
-Repository behavior and existing architectural decisions take precedence over speculative redesign.
+Repository behavior and established architectural decisions take precedence over speculative redesign.
 
 ---
 
-## 3. Scope Discipline
+# 4. Scope Discipline
 
 Implement only the requested scope.
 
-Do not silently start the next product stage.
+Do not silently start another product stage.
 
-Do not add unrelated:
+Do not introduce unrelated:
 
-- commercial features;
+- commercial functionality;
 - frameworks;
 - infrastructure;
 - providers;
-- abstractions;
-- microservices;
-- admin capabilities;
 - background jobs;
+- microservices;
+- external integrations;
+- admin capabilities;
 - search engines;
-- external integrations.
+- payment systems;
+- shipping/order systems;
+- mobile applications.
 
-A good implementation solves the current task while keeping future work possible.
+A good change solves the requested problem while keeping future development possible.
 
-It does not pre-build every future feature.
+It does not pre-build hypothetical future products.
 
 ---
 
-## 4. Repository Structure
+# 5. Repository Structure
 
 The repository is an npm-workspaces monorepo.
 
@@ -87,7 +119,7 @@ scripts/
 .github/workflows/
 ```
 
-`packages/` should be introduced only when real cross-application reuse exists.
+Introduce `packages/` only when genuine cross-application reuse exists.
 
 Do not create generic dumping grounds such as:
 
@@ -98,13 +130,13 @@ utils/
 helpers/
 ```
 
-without a clear, cohesive responsibility.
+without a clear cohesive responsibility.
 
-Shared code must have a specific reason to exist.
+Shared code must exist for a specific architectural reason.
 
 ---
 
-## 5. Core Technology Stack
+# 6. Core Technology Stack
 
 Backend:
 
@@ -117,6 +149,7 @@ TypeORM
 Redis
 BullMQ
 S3-compatible object storage
+Socket.IO
 ```
 
 Frontend:
@@ -129,28 +162,29 @@ App Router
 MapLibre GL JS
 ```
 
-Development object storage:
+Development/test object storage:
 
 ```text
 MinIO
 ```
 
-MinIO is a local/development S3-compatible implementation, not an application-level dependency.
+MinIO is not a business-level dependency.
 
-The application must remain portable to other S3-compatible providers.
+Application storage code must remain compatible with the required S3 contract rather than MinIO-specific behavior.
 
 ---
 
-## 6. Architecture Style
+# 7. Architecture Style
 
 Use a **Modular Monolith**.
 
-Do not introduce microservices merely because a subsystem could theoretically become one later.
+Do not introduce microservices merely because a subsystem might theoretically be extracted in the future.
 
-Current logical modules include responsibilities such as:
+Current modules cover responsibilities such as:
 
 ```text
 auth
+account
 users
 vehicles
 parts
@@ -159,85 +193,97 @@ media
 geo
 search
 favorites
+saved searches
 messaging
-notifications / engagement
+notifications
+email delivery
 moderation
 admin
 audit
 ```
 
-Module boundaries must remain explicit.
+Workers remain separate executable processes while sharing the same application/module architecture.
 
-Future extraction of Search, Geo, Media, Messaging, Notifications, or Analytics must remain possible, but current implementation stays inside the modular monolith unless there is a concrete operational reason to split it.
+Separate process does not mean separate microservice.
+
+Possible future extraction of Search, Geo, Media, Messaging, Notifications, or Analytics must remain possible, but extraction requires a concrete operational need.
 
 ---
 
-## 7. Module Ownership
+# 8. Module Ownership
 
 Every domain concept must have an owning module.
 
 Avoid:
 
-- circular module dependencies;
-- cross-module persistence access without a public application contract;
-- importing another module's private service implementation;
-- shared mutable domain logic copied between modules.
+- circular dependencies;
+- direct access to another module's private persistence implementation;
+- importing another module's private services;
+- duplicated cross-module business logic.
 
 Prefer public application contracts between modules.
 
-Do not use `forwardRef()` as a default solution to poor boundaries.
+Do not use `forwardRef()` as the default solution to module cycles.
 
-A cycle usually indicates misplaced responsibility.
+A dependency cycle usually indicates misplaced responsibility.
 
 ---
 
-## 8. Keep Controllers Thin
+# 9. Controllers Stay Thin
 
 Controllers are transport adapters.
 
 They should handle:
 
 - DTO validation;
-- authentication/authorization decorators;
-- HTTP headers;
-- response mapping;
-- status codes.
+- auth decorators/guards;
+- headers;
+- HTTP status;
+- response mapping.
 
-Controllers must not contain large amounts of business logic.
+Controllers must not contain substantial business logic.
 
-Business rules belong in application/domain services.
+Business behavior belongs in application/domain services.
 
-Persistence-specific TypeORM logic belongs near persistence code.
+Persistence-specific TypeORM work belongs near persistence code.
 
 ---
 
-## 9. Avoid Giant Services
+# 10. Avoid Giant Services
 
-Do not create thousand-line services that handle unrelated responsibilities.
+Do not create thousand-line services responsible for unrelated business capabilities.
 
-Split services by cohesive use case or business capability.
+Split by cohesive use case or responsibility.
 
-At the same time, do not fragment code into dozens of one-method abstractions without value.
+At the same time, do not fragment the application into dozens of meaningless one-method abstractions.
 
 Prefer cohesion over file count.
 
 ---
 
-## 10. Do Not Dogmatically Apply Clean Architecture
+# 11. Avoid Dogmatic Architecture
 
-Use separation where it provides value.
+Use abstraction when it solves a real problem.
 
-Do not create excessive interfaces, factories, adapters, repositories, commands, handlers, and mapping layers merely to imitate a textbook architecture.
+Do not introduce excessive:
 
-A modular monolith with clear application boundaries is sufficient.
+- interfaces;
+- repositories;
+- factories;
+- command buses;
+- handlers;
+- mappers;
+- adapters;
+
+merely to imitate textbook architecture.
+
+The current modular monolith with explicit boundaries is sufficient.
 
 ---
 
 # Marketplace Architecture
 
-## 11. Marketplace Is Multi-Category
-
-The marketplace is no longer vehicle-only.
+## 12. Marketplace Is Multi-Category
 
 At minimum:
 
@@ -246,17 +292,17 @@ ListingType.VEHICLE
 ListingType.PART
 ```
 
-All future work must respect this.
+All new marketplace work must respect this.
 
-Do not reintroduce assumptions that every `Listing` directly represents a vehicle.
+Never reintroduce an assumption that every `Listing` represents a Vehicle.
 
 ---
 
-## 12. Listing Is the Marketplace Root
+# 13. Listing Is the Marketplace Root
 
-`Listing` is the shared marketplace offer/root identity.
+`Listing` is the common marketplace offer identity.
 
-Common concerns belong to `Listing`, including:
+Common concerns belong to `Listing`, including concepts such as:
 
 ```text
 id
@@ -276,17 +322,17 @@ createdAt
 updatedAt
 ```
 
-and other genuinely common lifecycle fields.
+and other truly common offer/lifecycle state.
 
-`Listing.id` is the public identity of the marketplace offer.
+`Listing.id` is the common public identity used by shared marketplace capabilities.
 
 ---
 
-## 13. Explicit Listing Subtypes
+# 14. Explicit Listing Subtypes
 
 Category-specific data belongs to explicit subtype structures.
 
-Current model:
+Current conceptual model:
 
 ```text
 Listing
@@ -294,41 +340,41 @@ Listing
  └─ PartListing    -> Part
 ```
 
-Persistence uses subtype tables such as:
+Persistence uses explicit subtype tables such as:
 
 ```text
 vehicle_listings
 part_listings
 ```
 
-Do not move product-specific attributes back into the root `listings` table merely for query convenience.
+Do not flatten Vehicle and Part attributes into a giant nullable `listings` table merely to simplify queries.
 
 ---
 
-## 14. No Parallel Marketplace Architecture
+# 15. No Parallel Marketplace Architecture
 
-Do not create category-specific copies of shared marketplace capabilities when they can operate on the common Listing identity.
+Do not create category-specific copies of shared capabilities when common `Listing.id` already provides the correct identity.
 
-In particular, avoid introducing:
+Avoid:
 
 ```text
 part_media
 part_favorites
 part_messages
 part_reports
-part_audit_logs
 part_locations
+part_audit_logs
+vehicle_notifications
+part_notifications
 ```
 
-Shared capabilities should continue to reference `Listing.id`.
-
-Prefer explicit Listing subtypes over parallel marketplace architectures.
+unless the common capability becomes objectively insufficient and an architectural change is explicitly approved.
 
 ---
 
-## 15. Shared Marketplace Capabilities
+# 16. Shared Marketplace Capabilities
 
-The following capabilities are shared across Cars and Parts:
+Cars and Parts share:
 
 ```text
 Listing lifecycle
@@ -337,62 +383,63 @@ optimistic concurrency
 Media
 Location
 Favorites
+Saved Searches infrastructure
 Conversations
 Reports
 Moderation
 Audit
 Notifications
-Search infrastructure
+Search orchestration
 Geo infrastructure
 Map infrastructure
 ```
 
-Product-specific validation may differ.
+Subtype-specific validation may differ.
 
-The underlying shared capability should not be duplicated.
+Do not duplicate the underlying subsystem.
 
 ---
 
-## 16. Listing Type Integrity
+# 17. Listing Type Integrity
 
-A `Listing` discriminator and subtype must remain consistent.
+`Listing.type` and the subtype row must remain consistent.
 
-Examples of invalid states:
+Invalid examples:
 
 ```text
 Listing.type = VEHICLE
-but only a PartListing subtype exists
+but only a PartListing exists
 ```
 
 or:
 
 ```text
-one Listing simultaneously has VehicleListing and PartListing
+one Listing owns both VehicleListing and PartListing
 ```
 
-Application transactions and database constraints must enforce subtype integrity as strongly as practical.
+Enforce subtype integrity through transactions and database constraints where practical.
 
-Do not depend solely on frontend behavior.
+Never rely only on frontend behavior.
 
 ---
 
 # Vehicle Domain
 
-## 17. Vehicle and Listing Are Different Concepts
+## 18. Vehicle and Listing Are Different
 
 `Vehicle` describes an automobile observation/specification.
 
 `Listing` describes an offer to sell.
 
-Do not merge them.
+Do not merge these concepts.
 
-Seller ownership belongs to `Listing`, not to `Vehicle`.
+Seller ownership belongs to `Listing`, not Vehicle.
 
-Do not introduce `Vehicle.ownerId` as legal ownership semantics.
+Do not introduce `Vehicle.ownerId` as marketplace legal ownership semantics.
 
 ---
 
-## 18. Vehicle Catalog
+# 19. Vehicle Catalog
 
 Managed vehicle catalog concepts remain separate:
 
@@ -402,47 +449,41 @@ VehicleModel
 VehicleGeneration
 ```
 
-Typical relation:
+Typical hierarchy:
 
 ```text
 Make -> Models -> Generations
 ```
 
-A `Vehicle` references its model.
-
-Avoid redundant `makeId` on Vehicle if model already determines make.
+Avoid redundant fields where relationships already provide the information.
 
 ---
 
-## 19. Vehicle Observation Copy-on-Write
+# 20. Vehicle Observation Copy-on-Write
 
-Vehicle data used by historical or other Listings must not be silently mutated.
+Editing one Listing must not silently mutate Vehicle data used by another historical or active Listing.
 
-When seller edits vehicle characteristics for an editable Listing and the current architecture requires preserving other observations, use copy-on-write.
-
-Editing one Listing must not unexpectedly change another Listing's Vehicle data.
+When current architecture requires observation preservation, Vehicle characteristic changes use the existing copy-on-write semantics.
 
 ---
 
-## 20. Vehicle Sensitive Data
+# 21. VIN Privacy
 
-VIN is sensitive/private marketplace data.
+VIN is sensitive marketplace data.
 
-It must not be returned in ordinary public DTOs.
+Do not expose VIN through ordinary public DTOs.
 
-VIN must not be blindly globally unique because the same physical vehicle may appear in multiple historical sales/listings.
+Use the established normalization/validation policy.
 
-Normalize and validate VIN through the existing domain policy.
+Do not make VIN globally unique merely because it looks like an identifier: the same physical vehicle may legitimately appear in historical marketplace observations.
 
 ---
 
 # Parts Domain
 
-## 21. Parts Is a First-Class Domain
+## 22. Parts Is a First-Class Domain
 
-`parts` is a dedicated domain/module.
-
-It owns concepts including:
+The Parts module owns concepts including:
 
 ```text
 Part
@@ -454,25 +495,25 @@ part-number normalization
 compatibility rules
 ```
 
-Do not implement Parts as another Vehicle subtype.
+Do not model Part as a Vehicle subtype.
 
 ---
 
-## 22. Part Categories
+# 23. Part Categories
 
 Part categories are database-backed reference data.
 
-They support hierarchy through the existing adjacency model.
+They support hierarchy through the current adjacency model.
 
-Do not replace categories with a hard-coded enum.
+Do not replace the taxonomy with a hard-coded enum.
 
-The taxonomy must remain extensible.
+Prevent invalid cycles.
 
-Prevent obvious hierarchy cycles.
+Keep the taxonomy extensible.
 
 ---
 
-## 23. VehicleMake and PartBrand Are Different
+# 24. VehicleMake and PartBrand Differ
 
 Do not conflate:
 
@@ -480,17 +521,19 @@ Do not conflate:
 VehicleMake
 ```
 
-with:
+and:
 
 ```text
 PartBrand
 ```
 
-Examples such as Bosch, Brembo, Valeo, Sachs, or MANN-FILTER are part manufacturers/brands, not vehicle makes.
+A vehicle make describes the automobile manufacturer.
+
+A PartBrand describes the part manufacturer/brand.
 
 ---
 
-## 24. Part Numbers
+# 25. Part Numbers
 
 Parts support distinct concepts such as:
 
@@ -499,50 +542,48 @@ OEM number
 manufacturer part number
 ```
 
-Use the existing canonical normalization function.
+Use the existing canonical normalization logic.
 
-Do not implement a second normalization policy in Search or another module.
+Do not implement separate normalization inside Search or UI.
 
-Do not apply global uniqueness to OEM/manufacturer numbers unless a future verified catalog explicitly requires it.
-
-Multiple sellers and alternative products may legitimately share a number.
+Do not add global uniqueness unless a future verified catalog model explicitly requires it.
 
 ---
 
-## 25. Part Quantity
+# 26. Part Quantity
 
-`quantityAvailable` is specific to Part offers.
+`quantityAvailable` is Part-offer-specific.
 
-Do not move quantity into the root Listing merely because Parts currently use it.
+Do not move inventory quantity into root Listing simply because Parts use it.
 
-The existing bounded quantity constraints must remain enforced.
+Preserve existing bounds and constraints.
 
-Price is per unit under the current model.
+The current model treats price as per-unit price.
 
 ---
 
-## 26. Part Compatibility
+# 27. Part Compatibility
 
-Compatibility supports:
+Compatibility modes include:
 
 ```text
 UNIVERSAL
 VEHICLE_SPECIFIC
 ```
 
-Do not create fake catalog records such as:
+Do not create fake catalog entities like:
 
 ```text
 ALL CARS
 ```
 
-for universal parts.
+for universal Parts.
 
 ---
 
-## 27. Vehicle-Specific Fitment
+# 28. Vehicle-Specific Fitment
 
-Vehicle-specific fitments support:
+Fitments can reference:
 
 ```text
 VehicleModel
@@ -551,35 +592,29 @@ optional yearFrom
 optional yearTo
 ```
 
-A Part may have multiple fitments.
+A Part can have multiple scopes.
 
-When generation is specified, it must belong to the specified model.
+If Generation is specified, it must belong to the selected Model.
 
-Year ranges must be valid.
+Year bounds must be valid.
 
-Nullable generation/year semantics must remain consistent with documented Parts behavior.
-
----
-
-## 28. Compatibility Is Seller-Declared
-
-Unless a future external verified catalog is introduced, fitment compatibility is seller-provided information.
-
-UI/API wording must not falsely represent it as externally certified compatibility.
+Preserve nullable fitment uniqueness semantics.
 
 ---
 
-## 29. Avoid Duplicate Fitments
+# 29. Compatibility Is Seller-Declared
 
-Database/application rules must prevent duplicate compatibility scopes, including nullable generation/year combinations.
+Unless a verified external catalog is introduced, compatibility is seller-provided information.
 
-Preserve current `NULLS NOT DISTINCT`/equivalent semantics where used.
+Do not label it as certified or externally verified.
+
+Preserve provenance if verified compatibility is added later.
 
 ---
 
 # Listing Lifecycle
 
-## 30. One Shared Lifecycle
+## 30. Shared Lifecycle
 
 Cars and Parts use the same Listing lifecycle.
 
@@ -594,148 +629,157 @@ SOLD
 ARCHIVED
 ```
 
-Do not create a separate Part listing lifecycle.
+Do not create a separate Parts lifecycle.
 
 ---
 
-## 31. Seller State Transitions
+# 31. Seller Transitions
 
-Current seller-facing transitions include concepts such as:
+Use the centralized lifecycle implementation.
+
+Typical transitions include:
 
 ```text
 DRAFT -> PENDING_MODERATION
 REJECTED -> PENDING_MODERATION
-
 PUBLISHED -> SOLD
-
 supported states -> ARCHIVED
 ```
 
-Use the existing centralized lifecycle implementation.
-
-Do not spread transition rules across controllers.
+Do not duplicate transition rules across controllers or subtype modules.
 
 ---
 
-## 32. Moderator Transitions
+# 32. Moderator Transitions
 
-Moderation controls:
+Moderation controls transitions such as:
 
 ```text
 PENDING_MODERATION -> PUBLISHED
 PENDING_MODERATION -> REJECTED
-```
-
-Moderator removal of a published Listing currently uses:
-
-```text
 PUBLISHED -> ARCHIVED
 ```
 
-with an immutable moderation action recording that the archive was a moderation removal.
-
-Do not make moderator removal indistinguishable from seller intent in audit/history.
+Moderator removal must remain distinguishable from seller archive through immutable moderation/audit history.
 
 ---
 
-## 33. Editing Policy
+# 33. Moderator Removal and Messaging
 
-Current editing policy:
+Existing conversations remain readable to participants after moderator removal.
+
+Current policy:
+
+```text
+seller archive -> conversation may remain writable
+SOLD          -> conversation may remain writable
+moderator removal -> conversation becomes read-only
+```
+
+Moderator removal uses the existing persisted send-disabled state.
+
+Frontend may expose:
+
+```text
+canSend = false
+```
+
+without exposing internal moderation reason or moderator identity.
+
+Do not regress this distinction.
+
+---
+
+# 34. Editing Policy
+
+Seller editing currently applies to appropriate editable states such as:
 
 ```text
 DRAFT
 REJECTED
 ```
 
-are seller-editable.
+Do not silently make published listings editable.
 
-Do not silently make `PUBLISHED` editable.
-
-Published edits require an explicit revision/re-moderation design.
+Published edits require an explicit revision/re-moderation product design.
 
 ---
 
-## 34. Product-Specific Submission Validation
+# 35. Submission Completeness Is Subtype-Specific
 
-The lifecycle engine is shared.
+The lifecycle engine is common.
 
-Submission completeness may be subtype-specific.
+Submission completeness may differ.
 
-Vehicle submission may require:
+Vehicle requirements can include:
 
 - Vehicle data;
-- required location;
+- location;
 - READY primary media.
 
-Part submission may require:
+Part requirements can include:
 
+- Part specification;
 - category;
-- part specification;
 - quantity;
-- compatibility/universal declaration;
+- compatibility declaration;
 - READY primary media.
 
-Do not duplicate the lifecycle implementation to support subtype-specific completeness rules.
+Do not duplicate the lifecycle engine merely to implement different completeness rules.
 
 ---
 
-## 35. Published Invariants
+# 36. Publication Invariants
 
-Before moderation approval, publication invariants must be checked again.
+Before moderator approval, revalidate publication requirements.
 
-Do not rely solely on validation performed when seller submitted the Listing.
+Do not trust only the checks that ran during seller submit.
 
-Legacy/corrupted data must not be published merely because the status is `PENDING_MODERATION`.
+Corrupted or legacy data must not become public simply because status says `PENDING_MODERATION`.
 
 ---
 
 # Ownership and Concurrency
 
-## 36. Seller Identity Comes From Principal
+## 37. Seller Identity Comes From Principal
 
 Never accept authoritative `sellerId` from browser input.
 
-Seller is derived from the authenticated principal.
+Seller identity comes from the authenticated principal.
 
 ---
 
-## 37. IDOR Protection
+# 38. IDOR Protection
 
-Every private seller operation must verify ownership on the backend.
+All private owner/participant operations require backend authorization.
 
-For private resources, non-owner access generally returns `404` where existence should not be disclosed.
+When current policy protects resource existence, foreign access returns privacy-preserving `404`.
 
-Frontend hiding is not authorization.
-
----
-
-## 38. ADMIN Does Not Automatically Bypass Ownership
-
-Do not make `ADMIN` a universal ownership bypass.
-
-Administrative access must use explicit admin/moderation APIs and policies.
-
-This avoids accidental privilege escalation through seller APIs.
+Frontend hiding is UX, not authorization.
 
 ---
 
-## 39. Optimistic Concurrency
+# 39. ADMIN Is Not a Universal Ownership Bypass
 
-Listing edits and lifecycle mutations use the existing atomic version CAS.
+Administrative privileges do not automatically grant seller-resource ownership.
 
-Use the existing HTTP concurrency contract, including `If-Match` where applicable.
-
-Stale mutations must fail with a stable conflict error.
-
-Never silently overwrite a concurrent change.
+Use explicit moderation/admin APIs for privileged operations.
 
 ---
 
-## 40. Lifecycle Commands Need CAS Too
+# 40. Optimistic Concurrency
 
-Concurrency protection applies not only to PATCH.
+Listing edits and lifecycle changes use the established atomic version/CAS model.
 
-Commands such as:
+Preserve `If-Match` contracts where applicable.
+
+A stale write must produce a stable conflict rather than silently overwriting another change.
+
+---
+
+# 41. Lifecycle Commands Need Concurrency Protection
+
+Concurrency rules apply to commands such as:
 
 ```text
 submit
@@ -746,40 +790,42 @@ reject
 remove
 ```
 
-must remain concurrency-safe.
+not only `PATCH`.
 
 ---
 
-## 41. Transactions
+# 42. Transactions
 
-Use transactions when an operation changes multiple records that form one business action.
+Use transactions when several writes constitute one business operation.
 
 Examples:
 
 - Listing + subtype + location + audit;
-- Listing edit + subtype changes + fitments;
-- state transition + audit + notification + outbox;
+- Listing edit + fitments;
+- lifecycle transition + notification/outbox;
 - moderation resolution;
-- refresh token rotation.
+- refresh rotation;
+- message + conversation activity + outbox;
+- email-change confirmation.
 
-Keep transactions as short as practical.
+Keep transactions bounded.
 
-Do not perform slow external network calls while holding database locks.
+Never perform slow external network I/O while holding database locks.
 
 ---
 
-# Authentication and Authorization
+# Authentication, Account and Sessions
 
-## 42. Browser Authentication Strategy
+## 43. Browser Authentication Strategy
 
-Current browser auth architecture:
+Current architecture:
 
 - short-lived access JWT;
-- access token stored only in browser memory;
+- access token stored in browser memory;
 - refresh credential in HttpOnly cookie;
 - refresh rotation;
 - reuse detection;
-- multi-device logical sessions.
+- persisted logical sessions.
 
 Do not move access tokens into:
 
@@ -789,49 +835,61 @@ sessionStorage
 IndexedDB
 ```
 
-without an explicit architectural decision.
+without an explicit security architecture change.
 
 ---
 
-## 43. Token Lifetimes
+# 44. Token Lifetimes
 
-Current defaults are approximately:
+Current configuration is approximately:
 
 ```text
-access: 10 minutes
-session absolute lifetime: 30 days
-session idle lifetime: 7 days
+access JWT: ~10 minutes
+session absolute: ~30 days
+session idle: ~7 days
 ```
 
 Configuration remains authoritative.
 
-Do not hard-code values throughout the application.
+Do not duplicate literal durations throughout the application.
 
 ---
 
-## 44. Refresh Credentials
+# 45. Refresh Credentials
 
-Raw refresh credentials must never be persisted.
+Never persist raw refresh tokens.
 
-Only safe digests belong in the database.
+Persist only safe digests.
 
-Refresh rotation and reuse detection must remain transactional and concurrency-safe.
-
----
-
-## 45. Session Family
-
-`UserSession` is the logical browser/device session.
-
-Refreshing does not create a new logical session.
-
-New refresh token records remain part of the same session/token family.
+Refresh rotation and reuse detection remain transactional and concurrency-safe.
 
 ---
 
-## 46. Roles
+# 46. Logical Sessions
 
-Fixed roles currently include:
+`UserSession` is the logical device/browser session.
+
+Refresh rotation must not create a new logical session.
+
+Session management UI operates on logical sessions, not individual refresh-token records.
+
+---
+
+# 47. Session Revocation and Realtime
+
+Database session state is authoritative.
+
+When a session is revoked, realtime disconnection through the session room is best-effort immediate enforcement.
+
+A disconnected/reconnected client must still fail persisted session validation.
+
+Do not depend on the Redis disconnect event as the sole revocation mechanism.
+
+---
+
+# 48. Roles
+
+Current roles include:
 
 ```text
 USER
@@ -841,39 +899,41 @@ ADMIN
 
 A user may have multiple roles.
 
-`USER` is the base role.
+`USER` is baseline access.
 
-`MODERATOR` and `ADMIN` are additional privileges.
-
-Do not introduce arbitrary dynamic roles without a real product requirement.
+Do not introduce arbitrary dynamic RBAC without a real product requirement.
 
 ---
 
-## 47. Persisted Security State
+# 49. Persisted Security State
 
-Protected requests use current persisted security state according to the existing auth implementation.
+Protected operations must respect current persisted:
 
-Blocking, suspension, session revocation, and role changes must not rely indefinitely on stale JWT claims.
+- account status;
+- roles;
+- session state.
+
+Do not rely indefinitely on stale JWT claims after suspension, blocking, role change, or session revocation.
 
 ---
 
-## 48. Centralized Authorization
+# 50. Centralized Authorization
 
-Use existing guards/decorators/policies.
+Use established guards/policies/decorators.
 
-Do not scatter:
+Do not scatter code such as:
 
 ```ts
-if (user.roles.includes('ADMIN'))
+if (user.roles.includes('ADMIN')) { ... }
 ```
 
-through controllers.
+through controllers and services.
 
 ---
 
-## 49. Account Status
+# 51. Account Status
 
-Respect current account statuses such as:
+Respect current states such as:
 
 ```text
 ACTIVE
@@ -882,37 +942,69 @@ SUSPENDED
 BLOCKED
 ```
 
-Suspended/blocked users must not regain access through refresh or stale application assumptions.
+Suspended/blocked users must not regain access through stale refresh/session assumptions.
 
 ---
 
-## 50. Last Admin Protection
+# 52. Last Admin Protection
 
-Do not allow administrative actions that remove the final active ADMIN or accidentally lock the system out.
+Do not allow administrative operations to remove or disable the final active ADMIN in ways that lock out system administration.
 
-Preserve self-protection and last-admin invariants.
+---
+
+# 53. Profile
+
+The current user profile remains deliberately small.
+
+Do not turn Profile into an unbounded social-profile subsystem without a product requirement.
+
+`displayName` is currently the principal editable profile field.
+
+Email is not changed through ordinary profile PATCH.
+
+---
+
+# 54. Email Change
+
+Email changes use their dedicated security flow.
+
+Requirements include:
+
+- current-password reauthentication;
+- canonical email normalization;
+- purpose-specific single-use token;
+- digest-only token persistence;
+- expiry;
+- replacement semantics;
+- replay prevention;
+- uniqueness recheck;
+- session policy;
+- security notification.
+
+Do not bypass this through Profile or Admin convenience code.
 
 ---
 
 # PostgreSQL and TypeORM
 
-## 51. PostgreSQL Is the Source of Truth
+## 55. PostgreSQL Is Source of Truth
 
-Authoritative business state belongs in PostgreSQL.
+Authoritative business data belongs in PostgreSQL.
 
-Redis is not the source of truth for:
+Redis is not authoritative for:
 
-- listings;
-- sessions;
-- messages;
-- notifications;
-- favorites;
-- search subscriptions;
-- moderation state.
+- Listings;
+- Sessions;
+- Messages;
+- Notifications;
+- Favorites;
+- Saved Searches;
+- moderation state;
+- email delivery intent.
 
 ---
 
-## 52. Schema Changes Only Through Migrations
+# 56. Schema Changes Only Through Migrations
 
 Never enable:
 
@@ -920,49 +1012,55 @@ Never enable:
 synchronize: true
 ```
 
-Schema modifications require explicit TypeORM migrations.
+Schema changes require explicit TypeORM migrations.
 
-Do not modify already-applied historical migrations to implement new behavior.
+Never rewrite already-applied migration history to make the schema look cleaner.
 
-Create a new migration.
-
----
-
-## 53. PostGIS Extensions
-
-Do not silently install PostgreSQL extensions during ordinary application startup.
-
-Infrastructure/migrations control PostGIS availability according to current project conventions.
+Add a new migration.
 
 ---
 
-## 54. Reversible Migrations
+# 57. Production Migration Execution
 
-Migrations should have a meaningful `down()` where practical.
+API startup does **not** run migrations.
 
-However, do not pretend that a destructive production rollback is safe when new domain data cannot be represented by the old schema.
+Production migrations execute as a dedicated deployment job/step.
 
-Document rollback limitations honestly.
+Only one migration execution should run for a release.
+
+If migration fails, deployment stops.
+
+Do not automatically run `down()` as a generic rollback response.
+
+After new-format data exists, forward repair may be safer than schema rollback.
 
 ---
 
-## 55. Migration Verification
+# 58. PostGIS
 
-For schema changes, verify as applicable:
+PostGIS provisioning belongs to privileged infrastructure/migration bootstrap.
+
+Ordinary application startup must not silently install extensions.
+
+---
+
+# 59. Migration Verification
+
+For applicable schema work verify:
 
 ```text
 clean apply
-rollback
+repeat/no pending migrations
+rollback where safe
 reapply
-no pending migrations
 ORM schema consistency
 ```
 
-Do not report migration success without running the relevant command.
+Do not claim success without executing relevant checks.
 
 ---
 
-## 56. Database Naming
+# 60. Database Naming
 
 Use:
 
@@ -976,43 +1074,43 @@ in PostgreSQL and:
 camelCase
 ```
 
-in TypeScript according to current conventions.
+in TypeScript according to repository conventions.
 
 ---
 
-## 57. Public Identifiers
+# 61. Public IDs
 
-Use UUIDs for externally exposed entity identifiers.
+Use UUIDs for externally visible entity IDs.
 
-Do not expose sequential internal identifiers as public IDs.
-
----
-
-## 58. Time
-
-Use UTC.
-
-PostgreSQL timestamp semantics should use `timestamptz` where appropriate.
-
-Do not store local wall-clock times as business truth.
+Do not expose sequential internal identifiers as public resource IDs.
 
 ---
 
-## 59. Money
+# 62. Time
 
-Never use binary floating point for money.
+Use UTC as durable time truth.
 
-Use the existing minor-unit integer representation and explicit currency.
+Prefer `timestamptz` where appropriate.
 
-Do not compare values from different currencies as though they were equivalent.
+Do not mix browser/local wall clocks into authoritative expiry/lease semantics.
 
-Do not silently convert currencies without an explicit exchange-rate subsystem.
+For related durable timestamps where clock ordering matters, use consistent database time.
 
 ---
 
-## 60. Constraints Are Valuable
+# 63. Money
 
-Use database constraints for durable invariants where appropriate:
+Never use binary floating point for monetary values.
+
+Use existing integer minor units plus explicit currency.
+
+Do not compare currencies as equivalent without an exchange-rate subsystem.
+
+---
+
+# 64. Database Constraints
+
+Use durable constraints where appropriate:
 
 - foreign keys;
 - unique constraints;
@@ -1020,37 +1118,34 @@ Use database constraints for durable invariants where appropriate:
 - partial unique indexes;
 - subtype integrity;
 - valid quantity/ranges;
-- primary media uniqueness.
+- media primary uniqueness;
+- fitment uniqueness.
 
 Application validation improves errors.
 
-Database constraints remain the final integrity boundary.
+The database remains the durable integrity boundary.
 
 ---
 
-## 61. Deletion Behavior
+# 65. Deletion
 
-Choose `ON DELETE` behavior deliberately.
+Choose `ON DELETE` semantics deliberately.
 
-Do not use blanket cascading deletes.
+Avoid blanket cascades.
 
-Security/audit/moderation history must not disappear because a business entity is removed.
+Audit, security, moderation, and messaging history must not disappear accidentally with an entity deletion.
 
----
+Soft delete is not a universal default.
 
-## 62. Soft Delete Is Not a Default
-
-Use lifecycle/archive states where they model business semantics.
-
-Do not add `deletedAt` to every table automatically.
+Use lifecycle/archive state where it models business meaning.
 
 ---
 
-# API Design
+# API
 
-## 63. API Prefix
+## 66. API Prefix
 
-REST API is versioned under:
+HTTP API is versioned under:
 
 ```text
 /api/v1
@@ -1060,25 +1155,27 @@ Preserve this convention.
 
 ---
 
-## 64. OpenAPI
+# 67. OpenAPI
 
-Public/backend HTTP contracts must remain documented in Swagger/OpenAPI.
+HTTP contracts remain documented through Swagger/OpenAPI.
 
-When changing an endpoint:
+When changing endpoints update:
 
-- update request schemas;
-- update response schemas;
-- update errors;
-- update security requirements;
-- update discriminators where applicable.
+- request schemas;
+- response schemas;
+- errors;
+- auth requirements;
+- discriminators.
+
+Production exposure of Swagger is deployment-configurable and should not be accidentally public.
 
 ---
 
-## 65. DTOs, Not Entities
+# 68. DTOs, Not ORM Entities
 
 Never return ORM entities directly.
 
-Use explicit allowlisted DTOs.
+Use allowlisted DTOs.
 
 This is especially important for:
 
@@ -1088,17 +1185,17 @@ This is especially important for:
 - Part;
 - Session;
 - Media;
+- Message;
 - Notification;
 - Moderation;
-- Audit.
+- Audit;
+- delivery state.
 
 ---
 
-## 66. Discriminated Marketplace DTOs
+# 69. Discriminated Marketplace DTOs
 
-For Cars and Parts, prefer discriminated unions.
-
-Conceptually:
+Prefer discriminated unions:
 
 ```ts
 type PublicListing =
@@ -1106,553 +1203,315 @@ type PublicListing =
   | PublicPartListing;
 ```
 
-Avoid giant DTOs with dozens of nullable fields where half are meaningless for each subtype.
+Do not create one giant nullable DTO containing every possible category field.
 
 ---
 
-## 67. Input Allowlisting
+# 70. Input Allowlisting
 
-Do not accept arbitrary entity-shaped PATCH bodies.
+Mutation DTOs expose only client-editable fields.
 
-DTOs must expose only fields a user is allowed to change.
+Never accept entity-shaped arbitrary PATCH objects.
 
-Protect against mass assignment.
-
-System fields must not be client-mutable.
+Protect system-owned fields from mass assignment.
 
 ---
 
-## 68. Errors
+# 71. Errors
 
 Use stable machine-readable application error codes.
 
-Do not leak:
+Never expose:
 
-- SQL errors;
+- SQL;
 - stack traces;
-- storage provider internals;
-- secret configuration.
+- provider secrets;
+- DB hosts;
+- storage internals.
 
-Map infrastructure failures to safe API errors.
+Transient database connectivity/unavailability may map to safe generic `503`.
+
+Do not incorrectly map normal business/constraint errors to `503`.
 
 ---
 
-## 69. Pagination
+# 72. Pagination and Bounded Responses
 
-Every potentially large collection endpoint must be bounded.
+Potentially large endpoints must be bounded.
 
-Public marketplace search uses keyset/cursor pagination.
+Public Search uses cursor/keyset pagination where defined.
 
-Do not introduce unbounded array responses.
+Avoid unnecessary exact totals.
 
-Avoid exact totals where they are not necessary.
+Never introduce unbounded collection responses.
 
 ---
 
 # Media
 
-## 70. Shared Media Pipeline
+## 73. Shared Media Pipeline
 
-Media belongs to the common Listing identity and works for both VEHICLE and PART.
+Media belongs to common `Listing.id`.
 
-Do not create category-specific media pipelines.
+Cars and Parts use the same pipeline.
+
+Do not create separate Part media infrastructure.
 
 ---
 
-## 71. Upload Architecture
+# 74. Upload Architecture
 
-Current flow is:
+Current pattern:
 
 ```text
 initialize
-→ presigned PUT
-→ direct S3 upload
-→ complete / HEAD
+→ presigned direct upload
+→ complete / storage verification
 → asynchronous processing
-→ READY
+→ READY variants
 ```
 
-Large source uploads should not flow through NestJS unless explicitly required.
+Do not proxy large binary uploads through the API unless there is a strong architectural reason.
 
 ---
 
-## 72. Media Security
+# 75. Media Security
 
-Do not trust:
+Treat uploaded content as untrusted.
 
-- extension;
-- browser MIME type;
-- client-declared dimensions;
-- client-declared size.
+Preserve:
 
-Validate the real object.
+- type/signature verification;
+- dimension/pixel bounds;
+- decode validation;
+- metadata stripping;
+- safe re-encoding;
+- bounded processing;
+- storage-key privacy.
 
-Current image processing uses safe decoding/re-encoding and strips EXIF/GPS from public variants.
-
----
-
-## 73. Public Media
-
-Only processed `READY` variants are public.
-
-Do not expose raw source objects.
-
-Do not expose storage keys or credentials in public DTOs.
+Raw storage keys and internal source objects must not leak through public DTOs.
 
 ---
 
-## 74. Media Immutability
+# 76. Media Publication Requirement
 
-Seller media mutation is allowed only in existing editable Listing states.
+Publication requires the appropriate READY primary media invariant.
 
-`PENDING_MODERATION` and `PUBLISHED` content remains immutable under current policy.
-
-Do not bypass moderation consistency.
+Storage failures must not cause incomplete media to appear READY.
 
 ---
 
-## 75. Primary Image
+# 77. Worker Recovery
 
-Maintain the invariant:
+Media work must remain recoverable after:
+
+- process crash;
+- Redis loss;
+- queue-state loss;
+- transient object-storage failure.
+
+PostgreSQL state remains the durable recovery basis where established.
+
+---
+
+# Search and Geo
+
+## 78. PostgreSQL/PostGIS Search
+
+PostgreSQL/PostGIS remains the initial Search/Geo source of truth.
+
+Do not add OpenSearch/Elasticsearch because it appears fashionable.
+
+A secondary search index requires measured need and a rebuild/correctness design.
+
+---
+
+# 79. Canonical Search Semantics
+
+Cars Search, Parts Search, Map filtering, Saved Searches, and matching logic must reuse the same canonical semantics.
+
+Do not independently reinterpret filters.
+
+---
+
+# 80. URL-Backed Search State
+
+Search state remains reproducible through the URL.
+
+Preserve:
+
+- reload;
+- sharing;
+- browser back/forward;
+- deterministic parsing/serialization.
+
+Homepage quick-search functionality must reuse canonical URL serialization rather than inventing a second filter format.
+
+---
+
+# 81. Cursor Security
+
+Public Search cursors remain:
+
+- opaque;
+- integrity-protected/encrypted according to current implementation;
+- TTL-bound;
+- tied to search/filter semantics.
+
+Do not expose internal keyset state directly.
+
+---
+
+# 82. Geo Privacy
+
+Private location and public location are distinct.
+
+Conceptually:
 
 ```text
-at most one READY primary media per Listing
+exactPoint  -> internal filtering/ranking
+publicPoint -> public projection
 ```
 
-Preserve the database constraint and transaction-safe behavior.
-
----
-
-## 76. Background Processing
-
-Media uses Redis/BullMQ workers with persisted database recovery state.
-
-Assume at-least-once execution.
-
-Worker logic must remain idempotent.
-
----
-
-# Geo
-
-## 77. SRID
-
-Canonical stored geographic points use:
+Never fallback:
 
 ```text
-SRID 4326
+publicPoint missing -> expose exactPoint
 ```
 
-Do not migrate canonical location storage to Web Mercator merely because the map uses it for rendering/clustering.
+Not in:
+
+- list;
+- detail;
+- map;
+- cluster;
+- notifications;
+- Saved Searches;
+- logs.
 
 ---
 
-## 78. Exact vs Public Location
+# 83. Near Me Privacy
 
-This is a strict privacy boundary.
+Browser precise geolocation is ephemeral search input.
 
-```text
-exactPoint
-```
+Do not:
 
-is private/internal.
+- request it automatically;
+- store it in localStorage;
+- embed it in Saved Searches;
+- expose it in logs;
+- put exact coordinates into share URLs unless explicitly approved.
 
-```text
-publicPoint
-```
-
-is the coordinate allowed for public display.
-
-Never implement:
-
-```ts
-publicPoint ?? exactPoint
-```
-
----
-
-## 79. Exact Point Uses
-
-The backend may use exactPoint internally for:
-
-- radius filtering;
-- nearest ranking;
-- internal membership checks.
-
-This does not make it public.
-
----
-
-## 80. Public Map Uses
-
-Markers and map clustering use only:
-
-```text
-publicPoint
-```
-
-Listings without `publicPoint` remain searchable in ordinary list results when otherwise eligible, but must not appear as map markers.
-
----
-
-## 81. Distance Privacy
-
-Do not return unnecessarily precise distances derived from private coordinates.
-
-Preserve the existing rounded-distance policy.
-
-Do not claim rounding fully prevents triangulation.
-
----
-
-# Search
-
-## 82. Unified Search Infrastructure
-
-There is one marketplace Search infrastructure.
-
-Do not create a separate full search engine for Cars and Parts.
-
-Use:
-
-```text
-common orchestration
-+ Vehicle-specific filters
-+ Part-specific filters
-```
-
----
-
-## 83. Canonical Search Endpoint
-
-The current canonical public search endpoint is:
-
-```text
-GET /api/v1/listings
-```
-
-New clients should explicitly use:
-
-```text
-type=VEHICLE
-```
-
-or:
-
-```text
-type=PART
-```
-
-Historical missing-type behavior exists only for backward compatibility.
-
-Do not build new clients that depend on implicit type.
-
----
-
-## 84. Product-Specific Filters
-
-Vehicle filters include existing concepts such as:
-
-```text
-make
-model
-generation
-year
-price
-mileage
-body type
-fuel
-transmission
-drive
-condition
-color
-```
-
-Part filters include concepts such as:
-
-```text
-category
-brand
-condition
-OEM number
-manufacturer part number
-compatibility
-price
-```
-
-Reject filters that do not apply to the selected Listing type.
-
-Do not silently ignore cross-type filters.
-
----
-
-## 85. Part Search Compatibility
-
-Parts Search must preserve the same fitment semantics as Parts domain:
-
-- make/model/generation integrity;
-- optional year;
-- universal inclusion policy;
-- category subtree policy;
-- canonical part-number normalization.
-
-Do not duplicate these rules with divergent logic.
-
----
-
-## 86. Search Cursor
-
-Current public Search cursor is opaque, encrypted/authenticated, versioned, expiring, and bound to a canonical query fingerprint.
-
-Preserve the existing implementation.
-
-A cursor from one:
-
-```text
-type
-filters
-sort
-geo context
-```
-
-must not be accepted for another.
-
----
-
-## 87. Search Source of Truth
-
-Search currently uses PostgreSQL/PostGIS.
-
-Do not add:
-
-```text
-OpenSearch
-Elasticsearch
-Algolia
-Meilisearch
-Typesense
-```
-
-without measured need.
-
-Possible future triggers include:
-
-- complex free text;
-- typo tolerance;
-- advanced ranking;
-- very heavy faceting;
-- substantially higher search QPS.
-
----
-
-## 88. Search Query Safety
-
-All filters use bound parameters.
-
-Sorts must use allowlists.
-
-Never interpolate user-provided SQL identifiers/fragments directly.
-
----
-
-## 89. Search Performance
-
-Avoid:
-
-- N+1;
-- default `COUNT(*)`;
-- offset pagination for canonical marketplace search;
-- loading full entity graphs.
-
-Use targeted projections.
-
-Validate new indexes through realistic `EXPLAIN (ANALYZE, BUFFERS)` workflows.
-
----
-
-## 90. Search Index Discipline
-
-Do not create an index for every filter column.
-
-Consider:
-
-- selectivity;
-- partial `PUBLISHED` indexes;
-- actual query plans;
-- write/storage cost;
-- overlapping indexes.
-
-Add indexes because measured query plans justify them.
+User interaction must trigger location access.
 
 ---
 
 # Map
 
-## 91. Shared Map Infrastructure
-
-Cars and Parts use the same Map infrastructure.
-
-Do not create separate complete:
-
-```text
-CarMap
-PartMap
-```
-
-implementations.
-
-Subtype-specific marker presentation may differ.
-
----
-
-## 92. MapLibre
+## 84. MapLibre
 
 Frontend map uses MapLibre GL JS.
 
-Map provider/style configuration must remain external/configurable.
+Map style/provider configuration remains external.
 
-Do not leak server secrets to the browser.
+Do not expose provider server secrets to the browser.
 
-Preserve provider attribution requirements.
-
----
-
-## 93. Map Is a Search Projection
-
-Map filters use the same canonical Search semantics.
-
-Do not let list and map implement different business filtering rules.
+Respect attribution requirements.
 
 ---
 
-## 94. Viewport Is Not Search BBox
+# 85. Map Is Search Projection
 
-Keep separate concepts:
+Map filters use canonical Search semantics.
+
+List and Map must not return conceptually different result sets for the same filters.
+
+---
+
+# 86. Public Points Only
+
+Map marker/cluster payloads use public-safe coordinates.
+
+Never pass exact Listing coordinates through Map DTOs.
+
+---
+
+# 87. Server-Assisted Clustering
+
+Do not cluster only the first truncated client marker page and treat the result as global truth.
+
+Existing server clustering/aggregation semantics must remain correct for the requested viewport.
+
+---
+
+# 88. Explicit Viewport Search
+
+Preserve explicit:
 
 ```text
-map viewport
+Search this area
 ```
 
-versus:
+behavior where current UX requires it.
 
-```text
-actual Search bbox filter
-```
-
-A user panning the map does not automatically redefine their global Search.
-
-`Search this area` is an explicit action.
+Do not silently refetch on every tiny map movement unless redesign explicitly changes this policy.
 
 ---
 
-## 95. Server-Assisted Clustering
+# 89. Map Frontend Performance
 
-Do not cluster only a truncated first page of marker points on the client.
+Prefer MapLibre source/layer data over hundreds of React DOM markers.
 
-Server-assisted clustering must operate on the full set of matching public display points within the viewport, subject to bounded response rules.
+Reuse map instances.
 
----
+Update source data rather than reconstructing MapLibre repeatedly.
 
-## 96. Clustering Privacy
+Cancel/ignore stale requests.
 
-Cluster:
-
-- centers;
-- counts;
-- bounds;
-
-must be based exclusively on `publicPoint`.
-
-Never use `exactPoint` for display clustering.
-
----
-
-## 97. Map Feature Types
-
-Map API uses discriminated features such as:
-
-```text
-LISTING
-CLUSTER
-```
-
-Clusters are derived data.
-
-Do not persist a `map_clusters` table.
-
----
-
-## 98. Map Response Bounds
-
-Map responses remain bounded.
-
-At low zoom, aggregate with clusters.
-
-At high zoom, return individual markers as practical.
-
-If even the aggregated result exceeds the response bound, return explicit truncation metadata.
-
----
-
-## 99. Map Frontend Performance
-
-Prefer MapLibre data sources/layers over hundreds of React DOM markers.
-
-Reuse a single map instance.
-
-Update source data rather than reconstructing the map on each request.
-
-Cancel stale viewport requests.
+Avoid leaking WebGL contexts during navigation.
 
 ---
 
 # Moderation and Admin
 
-## 100. Role Separation
+## 90. Role Separation
 
-`MODERATOR` handles content moderation.
+`MODERATOR` manages moderation.
 
-`ADMIN` additionally handles administrative account/role/audit operations.
+`ADMIN` additionally manages account/role/audit operations.
 
-Do not give MODERATOR implicit ADMIN capabilities.
-
----
-
-## 101. Moderation Queue
-
-Cars and Parts share one moderation workflow.
-
-Moderation decisions must respect Listing type and subtype-specific publication invariants.
+Do not grant MODERATOR implicit ADMIN rights.
 
 ---
 
-## 102. Approval
+# 91. Shared Moderation Queue
 
-Approval must:
+Cars and Parts share the moderation system.
 
-- require `PENDING_MODERATION`;
-- use version/CAS;
-- revalidate publication invariants;
-- atomically update Listing;
-- create moderation history;
-- create audit;
-- create seller notification.
+Moderation must respect Listing type and subtype-specific publication invariants.
 
 ---
 
-## 103. Rejection
+# 92. Approval and Rejection
 
-Use structured reason codes.
+Moderation decisions remain:
 
-Seller-visible moderation messages and internal moderator notes are separate concerns.
+- state-checked;
+- version/CAS protected;
+- transactional;
+- audited;
+- notification-producing where applicable.
 
-Never expose internal notes or moderator identity through seller/public DTOs.
+Seller-visible moderation feedback and internal moderator notes are separate.
+
+Never expose internal notes or moderator identity to ordinary seller/public projections.
 
 ---
 
-## 104. Reports
+# 93. Reports
 
-Reports may target existing supported types such as:
+Reports may target supported resources including:
 
 ```text
 LISTING
@@ -1660,222 +1519,212 @@ USER
 MESSAGE
 ```
 
-Keep target access and report context bounded.
+Keep privileged report context bounded.
 
-Private message moderation context must not expand into unrestricted conversation surveillance.
-
----
-
-## 105. User Administration
-
-ADMIN account operations include controlled:
-
-```text
-suspend
-block
-reactivate
-role changes
-```
-
-Status changes that disable the user revoke existing sessions.
-
-Reactivation never restores old sessions.
+Message moderation access must not become unrestricted conversation surveillance.
 
 ---
 
-## 106. Admin Audit
+# 94. Audit
 
-Audit remains append-only.
+Audit is append-oriented/immutable under current design.
 
-Do not create mutation/delete APIs for AuditLog.
-
-Privileged audit queries still use safe allowlisted DTOs.
+Do not provide ordinary mutation/delete APIs for historical audit entries.
 
 ---
 
-# Favorites, Saved Searches, Notifications, Outbox
+# Favorites, Saved Searches, Notifications and Outbox
 
-## 107. Favorites Are Shared
+## 95. Favorites Are Shared
 
 Favorites reference common `Listing.id`.
 
-Do not create category-specific favorite tables.
-
 Cars and Parts use the same Favorites subsystem.
 
----
-
-## 108. Favorite Privacy
-
-If a previously favorited Listing becomes unavailable/private:
-
-do not expose its former private data.
-
-Return a safe unavailable/tombstone representation.
+Unavailable/private Listings return safe tombstone projections rather than leaking old private data.
 
 ---
 
-## 109. Saved Searches Reuse Canonical Search
+# 96. Saved Searches
 
-Saved Searches must use the same canonical Search model and normalization rules as public Search.
+Saved Searches reuse canonical Search normalization.
 
-Do not create another interpretation of Vehicle/Part filters.
+Filters are schema-versioned.
 
----
+Unknown versions must not execute silently.
 
-## 110. Saved Search Versioning
+Canonical-equivalent filters should produce deterministic fingerprints.
 
-Saved Search filters are schema-versioned.
-
-Unknown schema versions must not be executed silently.
+Do not persist precise Near Me coordinates.
 
 ---
 
-## 111. Saved Search Location Privacy
+# 97. Transactional Outbox
 
-Precise browser Near Me origin:
+Durable asynchronous domain events use the PostgreSQL transactional outbox.
 
-```text
-lat
-lng
-radius
-```
+Business mutation and relevant outbox event commit atomically.
 
-must not be persisted as a Saved Search.
-
-An explicit coarse/search bbox may be persisted under current policy.
-
-Map viewport is not automatically a saved filter.
+Redis/BullMQ must not be the only durability layer.
 
 ---
 
-## 112. Saved Search Fingerprints
+# 98. Outbox Semantics
 
-Canonical-equivalent filter sets must produce deterministic fingerprints.
+Assume at-least-once execution.
 
-Do not allow trivial duplicates because array order or query-param order differs.
-
----
-
-## 113. Transactional Outbox
-
-Durable asynchronous domain events use PostgreSQL transactional outbox.
-
-Business transaction and relevant outbox event must commit atomically.
-
-Do not use Redis/BullMQ as the sole durability layer for domain events.
-
----
-
-## 114. Outbox Semantics
-
-Assume at-least-once processing.
-
-Consumers must be idempotent.
+Consumers are idempotent.
 
 Use:
 
 - bounded claims;
 - leases;
 - retry/backoff;
-- stale lease recovery;
-- terminal failure state;
-- deduplication.
+- jitter where appropriate;
+- stale-lease recovery;
+- terminal failed state;
+- deduplication/checkpointing.
 
 ---
 
-## 115. Domain Events
+# 99. Domain Event vs Notification
 
-Current relevant Listing events include concepts such as:
+A domain event is not automatically a user Notification.
+
+Keep distinct:
 
 ```text
-LISTING_PUBLISHED
-LISTING_MARKED_SOLD
-LISTING_ARCHIVED
-LISTING_REMOVED_BY_MODERATOR
+business event
+Notification
+delivery request
+transport
 ```
 
-New event types should describe business facts, not transport instructions.
+Do not conflate them merely for conceptual simplicity.
 
 ---
 
-## 116. Notification vs Domain Event
+# 100. Notification Payloads
 
-A domain event is not automatically a Notification.
+Notification payloads are versioned/type-specific.
 
-Example:
+Frontend must use type-specific presenters.
+
+Never render arbitrary Notification JSON as trusted UI.
+
+Unknown future/legacy payload types must degrade safely.
+
+---
+
+# 101. Notification Deep Links
+
+Construct internal links from trusted identifiers/type metadata.
+
+Do not persist or execute arbitrary attacker-controlled redirect URLs.
+
+---
+
+# 102. Notification Preferences
+
+Product email preferences and in-app Notification creation are separate concerns.
+
+Turning off a product email preference does not automatically disable the Notification Center.
+
+Mandatory security/account emails are not user-disableable under the current policy.
+
+Saved Search matching semantics remain distinct from email delivery preference.
+
+---
+
+# Email Delivery
+
+## 103. Notification Delivery Is Separate
+
+Keep separate:
 
 ```text
-LISTING_PUBLISHED
+Notification
+Notification Preference
+Delivery Intent
+Delivery Attempt/State
+Email Provider
 ```
 
-may generate:
+Do not collapse external delivery state into Notification itself.
+
+---
+
+# 104. Durable Delivery Intent
+
+External email provider calls do not occur inside Listing/Message/Moderation business transactions.
+
+Persist delivery intent first.
+
+PostgreSQL is authoritative for pending delivery.
+
+---
+
+# 105. Delivery Semantics
+
+Email delivery supports durable states such as:
 
 ```text
-SAVED_SEARCH_MATCH
+PENDING
+PROCESSING
+RETRY
+SENT
+FAILED
+SUPPRESSED
 ```
 
-for several users.
+Workers must handle:
 
-Keep event, notification, and delivery concepts separate.
-
----
-
-## 117. Direct Notifications vs Outbox
-
-A single-recipient Notification created in the same PostgreSQL transaction as a moderation/account action is already durable.
-
-Do not force every such notification through the outbox merely for conceptual uniformity.
-
-Use outbox primarily where asynchronous fan-out or cross-module processing is required.
+- bounded claims;
+- retries;
+- exponential backoff;
+- jitter;
+- provider `Retry-After`;
+- leases;
+- stale recovery;
+- bounded attempts;
+- safe error codes.
 
 ---
 
-## 118. Notification Payloads
+# 106. External Idempotency
 
-Notification payloads are versioned and type-specific.
+Internal dedupe and stable provider idempotency metadata reduce duplicates.
 
-Never treat arbitrary JSON as trusted notification UI data.
+Do not claim exactly-once external email delivery.
 
-Frontend uses type-specific presenters.
-
-Unknown future/legacy types must degrade safely.
+An ambiguous provider timeout can still have at-least-once external semantics depending on provider guarantees.
 
 ---
 
-## 119. Notification Deep Links
+# 107. Typed Email Templates
 
-Do not store attacker-controlled arbitrary URLs.
+Email rendering is server-owned and typed.
 
-Build internal routes from trusted type/target identifiers.
+Dynamic HTML must be escaped.
 
-Protect against open redirects.
+Provide plain text where current template architecture does.
 
----
+Do not include private:
 
-## 120. Saved Search Matching
+- exact coordinates;
+- storage keys;
+- message bodies where intentionally omitted;
+- internal moderation notes.
 
-Saved Search matching semantics must remain in parity with public Search.
-
-Reuse domain/search predicates instead of copying them.
-
-Especially preserve:
-
-- Vehicle filters;
-- Part category subtree;
-- part-number normalization;
-- fitment compatibility;
-- universal parts;
-- price/currency;
-- bbox semantics.
+Links derive from canonical configured public application URL, not untrusted Host headers.
 
 ---
 
-# Messaging Readiness
+# Messaging and Realtime
 
-## 121. Reuse Existing Messaging Persistence
+## 108. Reuse Existing Messaging Model
 
-Messaging persistence already uses concepts such as:
+Messaging uses existing:
 
 ```text
 Conversation
@@ -1883,130 +1732,180 @@ ConversationParticipant
 Message
 ```
 
-Future Messaging API/realtime work must reuse them.
-
-Do not create parallel `chat_*` persistence unless the current model is objectively insufficient.
+Do not create parallel `chat_*` persistence.
 
 ---
 
-## 122. Conversation Is Listing-Scoped
+# 109. Conversation Is Listing-Scoped
 
-Marketplace conversations are associated with common `Listing.id`.
+Conversation identity relates to common `Listing.id`.
 
-Therefore the same messaging subsystem must support both Cars and Parts.
-
-Do not create Part-specific conversations/messages.
+Cars and Parts share one Messaging subsystem.
 
 ---
 
-## 123. Participant Integrity
+# 110. Participant Integrity
 
-Preserve database/application membership rules.
+Only conversation participants can access/send within the conversation according to current rules.
 
-A sender must be a participant in the conversation.
-
-Do not rely only on frontend conversation IDs.
+Do not trust browser-provided conversation ownership.
 
 ---
 
-## 124. Message Privacy
+# 111. Message Privacy
 
 Message bodies are private user content.
 
-Do not write message bodies to:
+Do not place message text into:
 
 - ordinary logs;
-- audit metadata;
-- outbox payloads unless absolutely necessary.
+- generic audit metadata;
+- domain-event payloads;
+- metrics labels.
 
-Moderator message-context access remains explicitly privileged and bounded.
+Moderator context remains explicitly privileged and bounded.
 
 ---
 
-## 125. Realtime Is Transport, Not Truth
+# 112. Message Idempotency
 
-Future WebSocket realtime transport must never replace PostgreSQL persistence.
+Message sends use the established client-message idempotency contract.
 
-Message/Notification state must recover after:
+A retry of the same client operation must not create duplicate Message rows.
+
+Do not remove this merely because realtime appears reliable.
+
+---
+
+# 113. Read State
+
+Read watermark semantics are monotonic.
+
+Do not move read state backwards due to race/retry.
+
+---
+
+# 114. Realtime Is Transport, Not Truth
+
+Socket.IO is best-effort delivery.
+
+PostgreSQL remains authoritative.
+
+The system must recover after:
 
 - reload;
-- reconnect;
-- missed socket event;
-- Redis outage.
+- socket reconnect;
+- missed event;
+- Redis outage;
+- API instance restart.
+
+HTTP reconciliation remains necessary.
+
+---
+
+# 115. One Shared Frontend Realtime Connection
+
+Frontend features must reuse the established shared realtime connection/provider.
+
+Do not create separate persistent Socket.IO connections for:
+
+- Header;
+- Messages;
+- Notifications;
+- Account;
+- individual pages.
+
+A UI redesign must not multiply socket connections.
+
+---
+
+# 116. Realtime Authentication
+
+Socket authentication continues to use current access-token/session/origin policy.
+
+Do not move access tokens into URL query strings.
+
+Persisted account/session state remains authoritative after connection.
 
 ---
 
 # Redis and Background Work
 
-## 126. Redis Is Not Authoritative
+## 117. Redis Is Not Authoritative
 
-Redis may support:
+Redis supports ephemeral/coordination capabilities such as:
 
 - rate limiting;
-- queues;
-- pub/sub;
-- ephemeral coordination;
-- cache.
+- BullMQ;
+- Socket.IO pub/sub;
+- temporary coordination.
 
-If Redis loses data, authoritative marketplace data must remain intact.
-
----
-
-## 127. Background Jobs Are At-Least-Once
-
-Assume a job may run multiple times.
-
-Workers must be idempotent.
-
-Do not design a worker assuming exactly-once delivery.
+Redis data loss must not erase authoritative marketplace state.
 
 ---
 
-## 128. Job Payloads
+# 118. Background Work Is At-Least-Once
 
-Keep queue/outbox payloads minimal.
+Workers must tolerate duplicate execution.
 
-Prefer IDs.
+Do not assume exactly-once delivery.
 
-Do not enqueue:
+---
+
+# 119. Job Payloads
+
+Keep job/outbox payloads minimal.
+
+Prefer IDs and versioned safe metadata.
+
+Never enqueue:
 
 - raw media;
 - passwords;
 - access/refresh tokens;
-- private coordinates;
+- exact private location;
 - entire ORM entities.
 
 ---
 
-## 129. Worker Shutdown
+# 120. Worker Processes
 
-Workers must support graceful shutdown.
+Current runtime includes independent processes for:
 
-Stop claiming new work and allow bounded active work to complete when practical.
+```text
+API
+Media Worker
+Engagement Worker
+Delivery Worker
+```
+
+Workers remain part of the modular monolith release.
+
+Do not convert them into microservices without concrete operational justification.
 
 ---
 
-## 130. Separate Process Readiness
+# 121. Graceful Worker Shutdown
 
-Workers may live in the same repository/module system but should be runnable as independent processes/containers.
+Workers stop claiming new work and allow bounded active work to complete where practical.
 
-Do not prematurely turn them into microservices.
+Durable lease/recovery semantics must make crash/shutdown recoverable.
 
 ---
 
 # Security
 
-## 131. Security Is a Backend Responsibility
+## 122. Security Is Enforced on Backend
 
-Never rely on frontend hiding, disabled buttons, or route visibility for authorization.
+Hidden controls and frontend route guards improve UX only.
 
-Backend enforcement is mandatory.
+Backend authorization is mandatory.
 
 ---
 
-## 132. Threats to Consider
+# 123. Threat Model
 
-At minimum evaluate:
+Always consider as applicable:
 
 - IDOR;
 - mass assignment;
@@ -2014,307 +1913,1312 @@ At minimum evaluate:
 - XSS;
 - CSRF;
 - SSRF;
-- unsafe redirects;
-- file upload attacks;
-- decompression bombs;
+- open redirect;
+- upload attacks;
+- decompression/pixel bombs;
 - rate-limit abuse;
 - cursor tampering;
 - privilege escalation;
-- stale concurrency writes;
+- stale writes;
 - private-location leakage;
+- token/session replay;
 - secret leakage.
 
 ---
 
-## 133. SQL
+# 124. SQL Safety
 
-Always use parameter binding.
+Use parameter binding.
 
-Sort/order selections use allowlists.
+Sort/order/filter SQL fragments use allowlists.
 
-Never inject raw user input into SQL fragments.
+Never interpolate arbitrary user input into raw SQL.
 
 ---
 
-## 134. XSS
+# 125. XSS
 
 User text is plain text unless explicitly designed otherwise.
 
-Do not treat:
+Do not treat as trusted HTML:
 
-- Listing title;
-- description;
+- Listing titles;
+- descriptions;
+- Part names;
 - messages;
+- report text;
 - moderation notes;
-- report details;
+- display names.
 
-as trusted HTML.
-
-Avoid unsafe `innerHTML`.
+Avoid unsafe `innerHTML`/`dangerouslySetInnerHTML` unless there is a reviewed, necessary, sanitized use case.
 
 ---
 
-## 135. CSRF
+# 126. CSRF / Origin
 
-Cookie-authenticated security endpoints follow the existing Origin/SameSite policy.
+Cookie-authenticated security-sensitive endpoints preserve the current Origin/SameSite policy.
 
-Do not weaken it casually.
+Do not weaken it to fix a frontend inconvenience.
 
-Bearer-token protected application requests have a different threat model.
+Bearer-token requests have different CSRF semantics.
 
 ---
 
-## 136. Secrets
+# 127. Secrets
 
 Never commit secrets.
 
+Do not bake production secrets into images or frontend bundles.
+
 `.env.example` contains placeholders or safe development defaults only.
 
-Production startup should reject invalid/weak critical secret configuration where the existing config model requires it.
+Production config validation should reject insecure critical configuration.
 
 ---
 
-## 137. Logging Secrets
+# 128. Never Log Secrets
 
 Never log:
 
-- password;
-- password hash;
-- raw refresh token;
-- access token;
-- reset/verification token;
-- cookie;
+- passwords;
+- password hashes;
+- raw refresh/access tokens;
+- verification/reset/email-change tokens;
+- cookies;
 - Authorization header;
-- presigned upload URL;
-- S3 credentials.
+- presigned upload URLs;
+- S3 credentials;
+- provider credentials.
 
 ---
 
-## 138. Geographic Privacy
+# 129. Geographic Logging
 
-Do not log exact browser geolocation in ordinary info logs.
+Do not log exact browser location in ordinary application logs.
 
-Do not expose exact Listing coordinates through public APIs.
-
-Do not weaken `exactPoint`/`publicPoint` boundaries.
+Metrics must never use coordinates as labels.
 
 ---
 
-## 139. Private Resource Enumeration
+# 130. Rate Limiting
 
-For private seller/user resources, prefer non-disclosing not-found semantics where current project policy uses them.
+Use endpoint-appropriate limits.
 
----
+Authentication, Search, Geo/Map, uploads, reports, messaging, and engagement actions have different abuse profiles.
 
-## 140. Rate Limiting
+Do not replace them with one global threshold.
 
-Use endpoint-appropriate rate limits.
-
-Authentication, Search, Geo, uploads, Reports, engagement mutations, and future messaging have different abuse profiles.
-
-Do not apply one global threshold to everything.
+Security-sensitive fail-closed behavior during Redis outage must not be casually changed.
 
 ---
 
-# Frontend
+# Frontend Architecture
 
-## 141. Next.js App Router
+## 131. Next.js App Router
 
-Follow existing App Router conventions.
+Follow the existing App Router architecture.
 
-Do not introduce a second frontend architecture.
-
----
-
-## 142. API Access
-
-Use existing typed API/client infrastructure.
-
-Do not scatter raw `fetch()` calls throughout components when an established client layer exists.
+Do not introduce a parallel SPA architecture or second routing system.
 
 ---
 
-## 143. URL-Backed Search State
+# 132. Typed API Access
 
-Cars and Parts search filters remain reproducible through URL state.
+Use established frontend API/client infrastructure.
 
-Preserve:
-
-- reload;
-- sharing;
-- back/forward;
-- deterministic parsing.
+Do not scatter ad hoc `fetch()` implementations when an existing typed client/helper covers the operation.
 
 ---
 
-## 144. Cars and Parts Are Separate User Sections
+# 133. Server vs Client Components
 
-Primary navigation treats:
+Keep components server-compatible where possible.
 
-```text
-/cars
-/parts
-```
+Do not add `"use client"` to large component trees merely for:
 
-as separate marketplace sections.
+- styling;
+- static rendering;
+- simple links;
+- non-interactive layout.
 
-Do not hide Parts inside a Cars filter.
-
----
-
-## 145. Seller Workspace Is Shared
-
-Seller account management remains common.
-
-For example:
-
-```text
-/account/listings
-```
-
-contains both Vehicle and Part listings.
-
-Use type filters/badges instead of creating completely separate seller dashboards.
+Client boundaries should exist for actual browser state/interactivity.
 
 ---
 
-## 146. Sell Entry
+# 134. Request Races
 
-The sell flow distinguishes:
+Search/filter/map requests must cancel or ignore stale responses.
 
-```text
-/sell/car
-/sell/part
-```
-
-through a shared type chooser.
-
-Shared UI components should remain reusable where domain semantics match.
+An older slow response must never overwrite newer user state.
 
 ---
 
-## 147. Shared Components
+# 135. Async UX States
 
-Reuse generic components for concerns such as:
-
-- money;
-- Listing Media;
-- location;
-- lifecycle actions;
-- optimistic conflict handling.
-
-Do not make a component generic when the semantics genuinely differ.
-
----
-
-## 148. Async UX States
-
-Every async screen/action must deliberately handle:
+Every meaningful async screen/action deliberately handles relevant states:
 
 ```text
 loading
 success
 empty
 error
+conflict
+retry
 ```
 
-and relevant conflict/retry states.
-
-Do not leave the UI blank during meaningful network state.
+Do not leave substantial UI blank during network work.
 
 ---
 
-## 149. Request Races
+# 136. Accessibility
 
-Search/map/filter requests must cancel or ignore stale responses.
+Use semantic HTML and native interactive elements.
 
-An older slow response must not overwrite newer state.
+Preserve:
+
+- keyboard navigation;
+- focus visibility;
+- labels;
+- ARIA where needed;
+- accessible names;
+- logical tab order.
+
+Map remains supplemental.
+
+An accessible List alternative must remain available.
 
 ---
 
-## 150. Accessibility
-
-Use semantic HTML and accessible controls.
-
-Important flows must remain usable through keyboard navigation.
-
-Map is supplemental; List remains an accessible alternative.
-
----
-
-## 151. Responsive UX
+# 137. Responsive UX
 
 Desktop and mobile are first-class.
 
-Do not create desktop-only administrative/search/seller workflows.
+Do not create desktop-only:
+
+- marketplace search;
+- seller workflow;
+- messaging;
+- account/security;
+- moderation/admin workflow.
+
+---
+
+# Frontend Design System
+
+## 138. Canonical Design Direction
+
+The current product design direction is:
+
+```text
+Clean European Automotive Marketplace
+```
+
+It should feel:
+
+- modern;
+- clean;
+- neutral;
+- professional;
+- trustworthy;
+- information-oriented;
+- suitable for a large marketplace;
+- brandable for a future corporate client.
+
+Avoid:
+
+- cyberpunk;
+- neon-heavy interfaces;
+- gaming aesthetics;
+- black/gold luxury;
+- dark-only design;
+- heavy glassmorphism;
+- excessive gradients;
+- animation-first UI;
+- oversized marketing hero patterns that hide marketplace functionality.
+
+---
+
+# 139. Design-System Source of Detail
+
+Architectural UI rules live in this file.
+
+Detailed visual definitions live in:
+
+```text
+docs/frontend/design-system.md
+```
+
+Do not duplicate every literal:
+
+- color;
+- radius;
+- spacing value;
+- type size;
+
+inside `AGENTS.md`.
+
+When visual tokens change, update the design-system documentation.
+
+---
+
+# 140. Shared UI Layer
+
+Reusable foundation components live in the established frontend UI layer:
+
+```text
+apps/web/src/components/ui
+```
+
+or its current repository-equivalent location if structure evolves deliberately.
+
+Feature/domain components may depend on shared UI.
+
+Shared UI must not depend on Cars/Parts feature modules.
+
+---
+
+# 141. Reuse Existing Primitives
+
+Before creating a new primitive, inspect existing shared components.
+
+Current foundation includes concepts such as:
+
+```text
+Button
+IconButton
+Input / Field
+Select
+Checkbox
+Radio
+Switch
+SearchInput
+Chip
+Badge
+Card
+Divider
+Dialog
+Alert
+Spinner
+Skeleton
+LoadingState
+EmptyState
+ErrorState
+layout/container primitives
+```
+
+Do not create duplicates such as:
+
+```text
+NewButton
+CarButton
+FancyButton
+Card2
+NewInput
+```
+
+for visual differences already expressible through existing controlled variants.
+
+---
+
+# 142. Design Tokens Are Mandatory
+
+New product UI styling must use the established token system for:
+
+- colors;
+- surfaces;
+- typography;
+- spacing;
+- radii;
+- shadows;
+- control sizes;
+- responsive containers.
+
+Avoid arbitrary feature-local values when a token already exists.
+
+Do not reintroduce random colors and spacing across features.
+
+---
+
+# 143. Styling Architecture
+
+Preserve the current lightweight styling approach.
+
+The current design-system architecture is conceptually:
+
+```text
+tokens
+→ existing layouts
+→ foundation styles
+→ reusable primitives
+→ feature components
+```
+
+Do not migrate the frontend to another styling framework merely for aesthetics.
+
+---
+
+# 144. Do Not Introduce a New UI Framework Casually
+
+Do not add large frameworks such as:
+
+- MUI;
+- Chakra;
+- Ant Design;
+- Mantine;
+- Bootstrap;
+- another full component suite;
+
+without an explicit architectural need.
+
+The existing custom foundation should be extended first.
+
+---
+
+# 145. CSS-in-JS
+
+Do not introduce runtime CSS-in-JS if the repository does not already require it.
+
+Keep styling compatible with the current ordinary CSS/token architecture.
+
+---
+
+# 146. Light-First Product
+
+The primary product UI is light-first.
+
+Dark mode is not currently a required feature.
+
+Design tokens should remain structured enough that future theming does not require a rewrite, but do not implement dark mode without scope.
+
+---
+
+# 147. Typography
+
+Use the current system sans-serif typography unless an explicit product decision changes it.
+
+Do not add decorative automotive display fonts.
+
+Typography should prioritize:
+
+- readability;
+- information scanning;
+- stable layout;
+- performance.
+
+Price, metadata, headings, and body text use the established design-system hierarchy.
+
+---
+
+# 148. Cars and Parts Share One Visual System
+
+Cars and Parts use one design language.
+
+They may have different feature-component anatomy because the information differs.
+
+For example:
+
+```text
+Vehicle card:
+year
+mileage
+fuel
+transmission
+location
+price
+```
+
+versus:
+
+```text
+Part card:
+brand
+condition
+part/OEM number
+compatibility
+stock
+price/unit
+```
+
+This difference must not become two separate design systems.
+
+---
+
+# 149. Density Can Differ by Product Area
+
+The system may use different information density:
+
+```text
+Public marketplace -> visual / image-oriented
+Account            -> medium density
+Admin/Moderation   -> compact/data-oriented
+```
+
+But they must share:
+
+- typography;
+- controls;
+- colors;
+- spacing principles;
+- statuses;
+- focus styles;
+- component primitives.
+
+---
+
+# 150. UI Redesign Must Not Change Business Semantics
+
+A presentation redesign must not silently change:
+
+- Listing lifecycle;
+- auth/session behavior;
+- Search filters;
+- API contracts;
+- Map filtering;
+- ownership;
+- concurrency;
+- moderation behavior;
+- notification semantics;
+- messaging semantics.
+
+UI improvements are not permission to redesign domain behavior.
+
+---
+
+# 151. Feature Migration Is Incremental
+
+Move old UI toward the design system gradually.
+
+Do not perform a risky global rewrite just to eliminate legacy CSS.
+
+Remove legacy styles only after the corresponding feature is actually migrated.
+
+---
+
+# 152. Accessible Names Are Contracts
+
+Playwright and accessibility flows rely heavily on semantic:
+
+- roles;
+- labels;
+- accessible names.
+
+Do not casually rename accessible controls only for stylistic wording.
+
+If an accessible name changes intentionally, update tests and verify the UX reason.
+
+Do not solve E2E failures by adding large amounts of unnecessary `data-testid`.
+
+---
+
+# 153. Responsive and Touch Rules
+
+Interactive mobile controls need appropriate touch targets.
+
+Avoid horizontal overflow.
+
+UI should tolerate:
+
+- long display names;
+- long labels;
+- German/Russian-sized text;
+- mobile widths;
+- browser zoom/reflow.
+
+Do not design fixed widths solely for short English strings.
+
+---
+
+# 154. Focus and Reduced Motion
+
+Do not remove focus outlines without an accessible replacement.
+
+Use the established `focus-visible` treatment.
+
+Respect:
+
+```text
+prefers-reduced-motion
+```
+
+Animations remain subtle and functional.
+
+---
+
+# 155. No Fake Marketplace Content
+
+Do not add fake:
+
+- listing counts;
+- trust statistics;
+- seller ratings;
+- availability;
+- marketing numbers;
+- badges;
+- testimonials;
+
+unless the product actually supplies those facts.
+
+Do not hard-code fake Listings into production pages.
+
+Use real API state or honest empty states.
+
+---
+
+# 156. External Images
+
+Do not hotlink random stock images into marketplace UI.
+
+Use actual Listing media or controlled local/product assets.
+
+Missing Listing media uses the established placeholder.
+
+---
+
+# 157. Navigation
+
+Cars and Parts remain equal primary sections:
+
+```text
+/cars
+/parts
+```
+
+Sell uses the common entry and existing type chooser.
+
+Seller workspace remains shared.
+
+Do not hide Parts inside Cars Search.
+
+---
+
+# 158. Global Realtime UI
+
+Header badges, Messages, and Notifications reuse established state/realtime infrastructure.
+
+Do not:
+
+- create a new Socket.IO connection for Header;
+- add independent polling loops for every badge;
+- duplicate Notification/Message subscriptions.
+
+Reuse the shared client/state architecture.
+
+---
+
+# 159. UI Status Colors
+
+Status styling must use semantic design-system variants rather than feature-local colors.
+
+This includes:
+
+- lifecycle;
+- moderation;
+- stock;
+- errors;
+- warnings;
+- success;
+- informational states.
+
+Do not encode business state using color alone.
+
+---
+
+# 160. Forms
+
+Forms use the shared field patterns.
+
+Preserve:
+
+- visible labels;
+- hint vs error distinction;
+- disabled/read-only semantics;
+- validation accessibility;
+- consistent focus;
+- loading-submit protection.
+
+Placeholder text is not a replacement for a label.
+
+---
+
+# 161. Dialogs
+
+Use the established accessible Dialog primitive where applicable.
+
+Dialogs must preserve:
+
+- focus trapping;
+- Escape behavior;
+- focus restoration;
+- accessible title;
+- backdrop behavior;
+- mobile safety.
+
+Do not invent another modal implementation inside a feature.
+
+---
+
+# 162. Loading, Empty and Error States
+
+Use established:
+
+```text
+Skeleton
+Spinner
+LoadingState
+EmptyState
+ErrorState
+Alert
+```
+
+according to context.
+
+Do not use fullscreen spinners for every local content load.
+
+Empty state is not an error state.
+
+Do not show technical exceptions to users.
+
+---
+
+# 163. Interactive Semantics
+
+Do not use:
+
+```tsx
+<div onClick={...}>
+```
+
+when a `button` or `a` is semantically correct.
+
+Avoid invalid nested interactive elements such as a button inside a link-wrapped interactive card.
+
+---
+
+# 164. Frontend Dependencies
+
+Before adding a frontend dependency evaluate:
+
+- whether shared UI already solves the need;
+- bundle cost;
+- maintenance;
+- accessibility;
+- security;
+- tree-shaking;
+- SSR/RSC compatibility.
+
+Do not add a dependency for trivial styling.
+
+---
+
+# 165. Frontend Bundle Discipline
+
+A design change should not force large client-side JavaScript growth without justification.
+
+Keep static components server-compatible.
+
+If adding icons, import only required icons rather than entire libraries.
 
 ---
 
 # Observability
 
-## 152. Structured Logging
+## 166. Structured Logging
 
-Use structured JSON logs.
+Backend runtime logs remain structured JSON in production.
 
-Include useful identifiers such as:
+Include safe operational metadata such as:
 
 - request ID;
-- safe entity IDs;
+- safe IDs;
 - operation/event type;
 - duration;
 - attempt count.
 
-Do not dump arbitrary request payloads.
+Do not dump arbitrary request bodies.
 
 ---
 
-## 153. Request IDs
+# 167. Request IDs and Async Correlation
 
-Preserve request/correlation ID infrastructure.
+Preserve request/correlation infrastructure.
 
-Pass causation/correlation context to async work where useful without fabricating HTTP request IDs that no longer exist.
+Async jobs may preserve causal/event identifiers where useful.
 
----
-
-## 154. Health and Readiness
-
-Preserve health/readiness endpoints.
-
-Readiness should reflect dependencies according to current project semantics.
-
-Do not mark the entire application unavailable merely because a non-authoritative realtime feature is degraded unless that dependency is required for the requested operation.
+Do not fabricate a historical HTTP request ID for unrelated later work.
 
 ---
 
-## 155. Metrics Cardinality
+# 168. Health and Readiness
 
-If adding metrics, avoid high-cardinality labels such as:
+Preserve:
+
+```text
+/api/v1/health
+/api/v1/health/ready
+```
+
+Liveness means process health.
+
+Readiness reflects whether the instance can safely serve core traffic.
+
+PostgreSQL is readiness-critical.
+
+Redis, S3, Email, and Map dependencies follow their documented degradation semantics and must not automatically make all core traffic unavailable.
+
+---
+
+# 169. Metrics
+
+The project exposes low-cardinality internal operational metrics.
+
+Do not add high-cardinality labels such as:
 
 ```text
 userId
 listingId
-mediaId
-search query
+conversationId
+requestId
+email
 coordinates
+raw search query
+```
+
+Metrics/internal operational routes are not normal public application endpoints.
+
+Production ingress should restrict them.
+
+---
+
+# 170. Slow Operations
+
+Preserve slow-request/job/query observability where established.
+
+Log operation class and duration, not sensitive payloads.
+
+---
+
+# Performance
+
+## 171. Avoid N+1
+
+Collection/detail queries must be reviewed for N+1 behavior.
+
+Prefer projections/batching over loading large ORM graphs.
+
+---
+
+# 172. Bound External Work
+
+Externally triggered operations remain bounded:
+
+- page size;
+- map features;
+- radius;
+- filters;
+- fitments;
+- media count;
+- Saved Searches;
+- worker batches;
+- delivery attempts.
+
+---
+
+# 173. Cache Carefully
+
+Do not add Redis caching merely because Redis is available.
+
+Every cache requires a correctness and invalidation story.
+
+Incorrect cache is worse than no cache.
+
+---
+
+# 174. Query Timeouts
+
+Respect current database statement/lock/transaction timeout policy.
+
+Do not fix a slow query simply by raising its timeout.
+
+Investigate the plan first.
+
+---
+
+# 175. No Premature Denormalization
+
+Do not add duplicate fields solely to avoid reasonable joins.
+
+Denormalization requires:
+
+- measured need;
+- consistency strategy;
+- migration;
+- explicit ownership.
+
+---
+
+# 176. Geo Is a Known Expensive Class
+
+Broad low-zoom Map/Geo aggregation remains one of the more expensive query classes.
+
+Preserve:
+
+- limits;
+- rate limits;
+- statement timeout;
+- server-side clustering;
+- observability.
+
+Do not prematurely introduce vector tiles or another Geo platform unless staging/production measurements justify it.
+
+---
+
+# Infrastructure and Deployment
+
+## 177. Local Infrastructure
+
+Development/test infrastructure uses Docker Compose conventions.
+
+PostgreSQL/PostGIS, Redis, and MinIO should use:
+
+- health checks;
+- isolated test configuration;
+- persistent volumes where intended.
+
+---
+
+# 178. Runtime Processes
+
+Current production architecture distinguishes:
+
+```text
+Web
+API
+Media Worker
+Engagement Worker
+Delivery Worker
+Migration Job
+```
+
+Frontend and API may scale independently.
+
+Workers use the backend runtime artifact with dedicated entrypoints where current deployment specifies it.
+
+---
+
+# 179. Production Statelessness
+
+HTTP instances remain stateless regarding durable business state.
+
+Do not depend on local process memory or container disk for authoritative application state.
+
+---
+
+# 180. Production Container Model
+
+Current release uses separate production Web and backend runtime images.
+
+Backend runtime supports:
+
+- API;
+- workers;
+- migration job.
+
+Do not bake secrets into images.
+
+Runtime images should remain non-root/minimal according to current deployment design.
+
+---
+
+# 181. Immutable Release Artifacts
+
+Deployment identity uses immutable version/SHA/digest semantics.
+
+Do not make mutable:
+
+```text
+latest
+```
+
+the only production identity.
+
+---
+
+# 182. Production Is External Evidence
+
+The repository can be release-ready while actual production remains unprovisioned.
+
+Never claim:
+
+```text
+PRODUCTION READY
+```
+
+merely because local Compose/reference deployment passed.
+
+Real production claims require evidence for actual:
+
+- infrastructure;
+- DNS/TLS;
+- managed services;
+- secrets;
+- providers;
+- monitoring;
+- backups;
+- staging/production smoke.
+
+---
+
+# 183. External Dependencies
+
+Production requires properly configured external services for:
+
+```text
+PostgreSQL/PostGIS
+Redis
+S3-compatible storage
+Email provider
+Map/style/tile provider
+```
+
+and infrastructure services such as:
+
+```text
+TLS/DNS
+secret management
+monitoring/on-call
+backup/PITR
+container registry
+```
+
+Do not hard-code a cloud vendor without client decision.
+
+---
+
+# 184. Production Database Roles
+
+Production guidance distinguishes:
+
+```text
+runtime role
+migration role
+backup/operator role
+monitoring role where applicable
+```
+
+Runtime application role should not require:
+
+```text
+SUPERUSER
+CREATEDB
+CREATE EXTENSION
 ```
 
 ---
 
-## 156. Slow Queries
+# 185. Redis
 
-For expensive subsystems, retain structured slow-query observability.
+Redis remains non-authoritative.
 
-Log query type/duration, not private values.
+Production requires appropriate:
+
+- private networking;
+- authentication;
+- TLS;
+- persistence;
+- HA;
+- memory policy.
+
+Do not use an eviction policy that can arbitrarily remove queue/coordination keys without an explicit design.
+
+---
+
+# 186. S3
+
+Use least-privilege object-storage credentials.
+
+Raw source media remains private.
+
+Presigned uploads and controlled/public processed variants must preserve current privacy model.
+
+Production object-storage durability/versioning/lifecycle policy belongs to infrastructure configuration.
+
+---
+
+# 187. Email and Map Providers
+
+Provider configuration is external.
+
+Do not commit provider secrets.
+
+Public browser map credentials, if required by the provider, must be intentionally public-scoped/domain-restricted.
+
+Email sender domains require the relevant provider/DNS setup.
+
+---
+
+# 188. Graceful Shutdown
+
+API and workers follow bounded graceful-shutdown conventions.
+
+Close as applicable:
+
+- HTTP listeners;
+- WebSocket resources;
+- queues/workers;
+- Redis connections;
+- DB pools.
+
+Do not let shutdown wait indefinitely.
+
+---
+
+# 189. Deployment Ordering
+
+Database migrations are a dedicated gate.
+
+When introducing new asynchronous event types, deploy consumers capable of reading the event before producers begin emitting it where compatibility requires this.
+
+Code rollback and schema rollback are separate decisions.
+
+Do not automatically execute destructive `down()` during application rollback.
+
+---
+
+# 190. Backup and Recovery
+
+Repository backup/restore tooling is not a replacement for managed production PITR/off-site backup.
+
+Production recovery requires both:
+
+- PostgreSQL data;
+- object-storage durability/recovery.
+
+RPO/RTO are business/infrastructure decisions and must not be invented by application code.
+
+---
+
+# Documentation
+
+## 191. Documentation Is Part of the Change
+
+Significant architecture/domain/runtime behavior changes require documentation updates.
+
+Prefer updating authoritative existing documents over creating conflicting parallel documentation.
+
+---
+
+# 192. Important Documentation Areas
+
+Relevant documentation includes:
+
+```text
+docs/architecture.md
+docs/data-model.md
+docs/authentication.md
+docs/listings.md
+docs/parts.md
+docs/media.md
+docs/search-and-geo.md
+docs/map.md
+docs/moderation-and-admin.md
+docs/favorites-saved-searches-notifications.md
+docs/messaging-and-realtime.md
+docs/account-and-email-delivery.md
+docs/reliability.md
+
+docs/frontend/design-system.md
+
+docs/operations/
+docs/deployment/
+docs/release/
+docs/handoff/
+docs/qa/
+docs/adr/
+```
+
+Use actual repository paths if documentation is reorganized.
+
+---
+
+# 193. ADRs
+
+Use ADRs for significant architectural decisions.
+
+Do not create an ADR for ordinary implementation details.
+
+An ADR should capture:
+
+- context;
+- decision;
+- alternatives/trade-offs;
+- consequences.
+
+---
+
+# 194. No Developer-Local Paths
+
+Committed docs must not depend on absolute developer-machine paths such as:
+
+```text
+F:\...
+C:\Users\...
+file://...
+```
+
+Use repository-relative paths.
+
+---
+
+# 195. Comments and TODOs
+
+Comments explain:
+
+- why;
+- constraints;
+- non-obvious behavior;
+- edge cases.
+
+Do not narrate trivial syntax.
+
+TODOs must describe concrete deferred work.
+
+Do not leave TODOs that hide correctness work required by the current task.
+
+---
+
+# Dependency Discipline
+
+## 196. Add Dependencies Deliberately
+
+Before adding dependencies evaluate:
+
+- existing repository capability;
+- maintenance;
+- security;
+- runtime/bundle cost;
+- native build requirements;
+- production image impact.
+
+Do not add libraries for trivial functionality.
+
+---
+
+# 197. Lockfile
+
+Keep `package-lock.json` consistent with package manifests.
+
+Use reproducible installation (`npm ci`) in CI/release workflows.
+
+Do not hand-edit inconsistent dependency state.
+
+---
+
+# 198. Security Audit
+
+Preserve dependency and image/security scans according to current workflows.
+
+Do not blindly upgrade unrelated major versions merely to eliminate informational warnings.
+
+No known Critical/High issue should be ignored in a release candidate without explicit documented risk handling.
+
+---
+
+# Coding Standards
+
+## 199. TypeScript
+
+Use strict TypeScript.
+
+Avoid unsafe `any`.
+
+Treat untrusted external data as `unknown` until validated/narrowed.
+
+---
+
+# 200. Existing Domain Types
+
+Reuse existing enums/types.
+
+Do not introduce a second enum/string set for the same canonical domain concept.
+
+---
+
+# 201. Side Effects Must Be Explicit
+
+Do not hide:
+
+- DB mutation;
+- event/outbox creation;
+- queue publish;
+- object deletion;
+- Notification fanout;
+- provider delivery;
+
+inside innocent-looking formatters/mappers/helpers.
+
+---
+
+# 202. Error Handling
+
+Handle expected business errors explicitly.
+
+Do not catch everything and return success.
+
+Unexpected errors should reach centralized handling after safe contextual logging.
+
+---
+
+# Git and Change Discipline
+
+## 203. Preserve Existing Work
+
+Do not remove unrelated functionality while implementing another task.
+
+Do not rewrite large working areas without necessity.
+
+---
+
+# 204. Migration History
+
+Never rewrite historical migrations to make the current schema prettier.
+
+Production evolves through new migrations.
+
+---
+
+# 205. Generated Artifacts
+
+Do not commit accidental local artifacts such as:
+
+- runtime logs;
+- `.env` secrets;
+- database dumps;
+- temporary performance datasets;
+- Playwright runtime report folders;
+- screenshots/videos unless intentionally retained as documentation;
+- Docker caches.
+
+Follow current `.gitignore`/repository policy.
+
+---
+
+# 206. Release Discipline
+
+Do not rewrite Git history simply to manufacture a cleaner project story.
+
+Use logical commits and release tags going forward.
+
+Release provenance must correspond to the actual committed source used to build artifacts.
 
 ---
 
 # Testing
 
-## 157. Tests Are Required
+## 207. Tests Are Required
 
-Changes should include meaningful tests appropriate to risk.
+Changes require tests appropriate to risk.
 
-Possible levels:
+Available levels include:
 
 ```text
 unit
@@ -2322,389 +3226,109 @@ HTTP/controller
 integration
 frontend/component
 browser E2E
+security
+resilience
+performance/query-plan
 ```
 
-Do not add tests that merely mirror implementation without protecting behavior.
+Do not write tests that merely restate implementation.
+
+Protect behavior and invariants.
 
 ---
 
-## 158. Real Infrastructure Integration Tests
+# 208. Playwright Is Established Infrastructure
 
-Database/infrastructure behavior must be tested against real services where necessary:
+Playwright is now a real repository regression gate.
 
-```text
-PostgreSQL/PostGIS
-Redis
-MinIO
-BullMQ workers
-```
+Do not treat browser testing as hypothetical.
 
-Do not replace critical persistence/geo/storage integration tests with mocks.
+Current browser coverage includes supported modern classes such as:
 
----
+- Chromium;
+- Firefox;
+- WebKit;
+- mobile emulation.
 
-## 159. Deterministic Test Data
+Substantial frontend changes must run the applicable browser E2E suite.
 
-Tests and performance fixtures must be deterministic.
-
-Do not depend on random external state.
+Do not claim real-device certification merely because emulation passed.
 
 ---
 
-## 160. Concurrency Tests
+# 209. Accessibility Regression
 
-Concurrency-sensitive behavior requires explicit tests.
+Preserve existing axe/browser accessibility checks.
 
-Examples:
+For significant UI changes verify:
 
-- CAS;
-- refresh rotation;
-- media limits;
-- primary media;
-- moderation decisions;
-- Part inventory;
-- Saved Search limits;
-- outbox claims.
+- no serious/critical violations in covered flows;
+- keyboard behavior;
+- focus;
+- semantic controls;
+- responsive/reflow behavior.
 
-Do not assume transaction code is correct without race tests.
+Automated checks do not replace every possible screen-reader/manual accessibility audit.
 
 ---
 
-## 161. Security Regression Tests
+# 210. Security Regression
 
-Where practical, maintain coverage for:
+Preserve tests for relevant:
 
 - IDOR;
+- ownership;
 - mass assignment;
-- sensitive DTO leakage;
-- stale version;
-- cursor tampering;
-- exact-location privacy;
-- privilege escalation;
-- token/session behavior.
+- XSS;
+- CSRF/Origin;
+- CORS;
+- JWT/session behavior;
+- token replay;
+- upload security;
+- exact-location leakage;
+- role separation.
 
 ---
 
-## 162. Query-Plan Tests
+# 211. Concurrency Regression
 
-Performance-sensitive database work should use realistic-enough datasets and:
+When changing concurrency-sensitive behavior, preserve or add coverage for:
 
-```text
-EXPLAIN (ANALYZE, BUFFERS)
-```
-
-Do not draw index conclusions from tables containing ten rows.
-
----
-
-## 163. Development Benchmark Disclaimer
-
-Local SQL timings are development measurements.
-
-Do not present them as production SLA guarantees.
+- Listing CAS;
+- lifecycle races;
+- moderation races;
+- media races;
+- auth refresh;
+- session revoke;
+- messaging idempotency;
+- read watermark;
+- worker claims;
+- delivery dedupe.
 
 ---
 
-## 164. Browser Testing
+# 212. Development Benchmark Disclaimer
 
-Playwright/browser infrastructure is not currently guaranteed.
+Local:
 
-When unavailable:
+- query timings;
+- load tests;
+- media throughput;
+- socket capacity;
 
-- do not claim browser E2E PASS;
-- cover behavior with frontend tests;
-- provide manual QA checklists for visual/realtime/map flows.
+are development observations, not production SLA.
 
----
-
-# Performance
-
-## 165. Avoid N+1
-
-Collection/detail queries must be reviewed for N+1 behavior.
-
-Do not load full ORM relation graphs for convenience.
-
-Use projections/batch queries.
-
----
-
-## 166. Bounded Work
-
-Every externally triggerable operation should be bounded.
-
-Examples:
-
-- page sizes;
-- map features;
-- radius;
-- multi-select filters;
-- fitments;
-- media count;
-- Saved Searches;
-- outbox batches.
-
----
-
-## 167. Cache Carefully
-
-Do not cache high-cardinality Search/Geo responses merely because Redis exists.
-
-Every cache requires an invalidation/correctness story.
-
-No cache is better than an incorrect cache.
-
----
-
-## 168. Statement Timeouts
-
-Respect current PostgreSQL/query timeout policies.
-
-Do not solve slow queries solely by increasing timeout.
-
-Investigate the plan first.
-
----
-
-## 169. No Premature Denormalization
-
-Do not add fields such as:
-
-```text
-listing.make_name
-listing.part_category_name
-```
-
-merely to avoid joins.
-
-Denormalize only with measured justification and an update-consistency design.
-
----
-
-# Infrastructure and Operations
-
-## 170. Local Infrastructure
-
-Development/test infrastructure uses Docker Compose according to repository conventions.
-
-PostgreSQL/PostGIS, Redis, and MinIO should have:
-
-- health checks;
-- persistent volumes where intended;
-- isolated test configuration.
-
----
-
-## 171. Production Statelessness
-
-Application HTTP instances should remain stateless apart from external persistence/services.
-
-Do not depend on process memory for durable business state.
-
----
-
-## 172. S3 Compatibility
-
-Storage logic must depend on S3-compatible contracts, not MinIO-only behavior.
-
----
-
-## 173. Deployment Readiness
-
-New subsystems should remain container/deployment-friendly.
-
-Do not hard-code local hostnames or Windows paths.
-
----
-
-## 174. Graceful Shutdown
-
-API and workers should close:
-
-- HTTP listeners;
-- queues/workers;
-- Redis connections;
-- database resources;
-
-according to existing lifecycle conventions.
-
----
-
-# Documentation
-
-## 175. Documentation Is Part of the Change
-
-Significant architecture or domain behavior must be reflected in `docs/`.
-
-Keep existing docs aligned with implementation.
-
----
-
-## 176. Current Important Documents
-
-Relevant documents include areas such as:
-
-```text
-architecture.md
-data-model.md
-authentication.md
-listings.md
-parts.md
-media.md
-search-and-geo.md
-map.md
-moderation-and-admin.md
-favorites-saved-searches-notifications.md
-```
-
-and applicable ADRs.
-
-When behavior changes, update the relevant existing document rather than creating conflicting documentation.
-
----
-
-## 177. ADRs
-
-Use ADRs for significant architectural decisions.
-
-Do not create an ADR for ordinary implementation details.
-
-An ADR should explain:
-
-- decision;
-- context;
-- alternatives/trade-offs;
-- consequences.
-
----
-
-## 178. Comments
-
-Comments should explain **why**, constraints, edge cases, or non-obvious behavior.
-
-Do not narrate trivial code.
-
----
-
-## 179. TODOs
-
-Avoid vague TODOs.
-
-A TODO should identify a concrete deferred requirement or limitation.
-
-Do not leave TODOs that hide unfinished correctness work required by the current task.
-
----
-
-# Dependency Discipline
-
-## 180. Add Dependencies Deliberately
-
-Before adding a dependency, evaluate:
-
-- whether the repository already has equivalent capability;
-- maintenance;
-- security;
-- runtime cost;
-- bundle impact;
-- native build requirements.
-
-Do not add libraries for trivial functionality.
-
----
-
-## 181. Lockfile
-
-Keep the lockfile consistent with package manifests.
-
-Do not hand-edit dependency state inconsistently.
-
----
-
-## 182. Security Audit
-
-Dependency audit results should be checked where repository workflows require them.
-
-Do not blindly update major dependencies unrelated to the requested task.
-
----
-
-# Coding Standards
-
-## 183. TypeScript
-
-Use strict TypeScript.
-
-Avoid unsafe `any`.
-
-If external data is `unknown`, validate/narrow it.
-
----
-
-## 184. Enums and Domain Types
-
-Use existing domain types rather than duplicating strings across modules.
-
-Do not introduce a second enum that represents the same canonical business concept.
-
----
-
-## 185. Immutability and Side Effects
-
-Make side effects explicit.
-
-Do not hide:
-
-- DB mutation;
-- queue publish;
-- storage deletion;
-- notification fan-out;
-
-inside innocent-looking mapping/helpers.
-
----
-
-## 186. Error Handling
-
-Handle expected business failures explicitly.
-
-Do not catch every error and return generic success.
-
-Unexpected errors should propagate to centralized error handling after appropriate safe logging.
-
----
-
-# Git and Change Discipline
-
-## 187. Preserve Existing Work
-
-Do not remove unrelated functionality while implementing a task.
-
-Do not rewrite large working areas without necessity.
-
----
-
-## 188. Generated Artifacts
-
-Do not commit local runtime artifacts, secrets, large temporary performance databases, or generated reports unless repository policy explicitly requires them.
-
----
-
-## 189. Migrations and History
-
-Never rewrite migration history simply to make the current schema look cleaner.
-
-Production systems evolve through new migrations.
+Never present them as guaranteed production capacity.
 
 ---
 
 # Verification
 
-## 190. Required Verification
+## 213. Core Verification
 
-For substantial changes, run the relevant available commands.
+For substantial changes run the relevant current commands.
 
-Core quality checks generally include:
+Core gates normally include:
 
 ```text
 npm run lint
@@ -2713,11 +3337,28 @@ npm test
 npm run build
 ```
 
-Database/integration work should also use the repository's real infrastructure workflow.
+---
+
+# 214. Frontend/UI Verification
+
+For substantial frontend redesign work, normally run:
+
+```text
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e
+npm run docs:check
+```
+
+Use actual repository command names if they change.
+
+Do not call a UI stage complete if the applicable Playwright suite fails.
 
 ---
 
-## 191. Integration Verification
+# 215. Database/Integration Verification
 
 Where applicable:
 
@@ -2728,26 +3369,45 @@ npm run test:integration
 npm run infra:test:down
 ```
 
-Use actual repository commands if naming changes.
+Use repository-equivalent commands when names change.
 
 ---
 
-## 192. Performance Workflows
+# 216. Security and Reliability Verification
 
-Preserve and run relevant workflows such as:
+When affected, run applicable gates such as:
+
+```text
+npm run test:security
+npm run resilience:test
+npm run ops:restore-test
+npm run ops:verify-data
+npm run maintenance:cleanup -- --dry-run
+```
+
+Do not run unrelated expensive workflows merely for appearance.
+
+---
+
+# 217. Query/Performance Workflows
+
+Run affected plan workflows such as:
 
 ```text
 npm run search:plans
+npm run moderation:plans
 npm run engagement:plans
+npm run messaging:plans
+npm run account-delivery:plans
 ```
 
-and future subsystem-specific plan commands when the modified code affects them.
+when relevant code changes can affect them.
 
 ---
 
-## 193. Do Not Claim Unrun Checks
+# 218. Do Not Claim Unrun Checks
 
-Final reports must distinguish:
+Reports must distinguish actual states:
 
 ```text
 PASS
@@ -2756,91 +3416,102 @@ NOT RUN
 UNAVAILABLE
 ```
 
-Do not state that something passed because the code appears correct.
+Do not say a check passed because code looks correct.
 
 ---
 
-## 194. Browser Claims
+# 219. Browser Claims
 
-If browser/WebGL/realtime visual QA was not actually performed, say so.
+Production build, TypeScript, and component tests are not equivalent to browser E2E.
 
-Production build + component tests are not the same as browser E2E.
+Browser/WebGL/realtime behavior can be claimed only if actually exercised by the appropriate browser tests/manual checks.
 
 ---
 
 # Task Execution
 
-## 195. Inspect First
+## 220. Inspect First
 
-Before implementing a requested stage:
+Before implementing:
 
-- inspect the existing repository;
-- preserve established conventions;
-- identify affected modules and invariants;
-- plan migrations/tests before coding.
-
----
-
-## 196. Prefer Minimal Compatible Change
-
-Do not redesign unrelated architecture while solving one task.
-
-When the existing architecture supports the feature, extend it.
+- inspect current repository state;
+- read relevant docs;
+- identify affected modules/components;
+- identify invariants;
+- identify migration implications;
+- identify test implications.
 
 ---
 
-## 197. Ask Only Material Questions
+# 221. Prefer Minimal Compatible Change
 
-Do not stop implementation for minor preferences that can be safely resolved from existing project conventions.
+Extend existing architecture where it already supports the requirement.
 
-Ask only when the missing information materially changes architecture, security, or product behavior.
+Do not redesign unrelated areas.
 
 ---
 
-## 198. Do Not Hide Failures
+# 222. Ask Only Material Questions
+
+Do not halt work for minor preferences that can be resolved from established repository conventions.
+
+Ask when missing information materially affects:
+
+- architecture;
+- security;
+- data integrity;
+- product behavior;
+- external infrastructure decisions.
+
+---
+
+# 223. Do Not Hide Failures
 
 If verification fails:
 
-- report the exact failing command;
-- summarize the real failure;
-- fix it if within scope;
-- do not describe the stage as complete until acceptance criteria are met.
+1. report the exact failing command;
+2. identify the real failure;
+3. fix it if within scope;
+4. rerun the relevant check;
+5. do not call the task complete while required acceptance gates fail.
 
 ---
 
-## 199. Completion Report
+# 224. Completion Reports
 
-For substantial implementation tasks, final reports should include as relevant:
+For substantial tasks report applicable sections such as:
 
 ```text
 Implemented
 Architecture
+Frontend/UI
 API
 Database changes
 Concurrency
 Security
+Accessibility
 Tests
-Performance/query plans
+Performance
 Verification
 Known limitations
 Next recommended step
 ```
 
-Report actual results, not intended results.
+Report what was actually executed.
 
 ---
 
-# Architectural Anti-Patterns to Avoid
+# Architectural Anti-Patterns
 
-## 200. Do Not Reintroduce Vehicle-Only Assumptions
+## 225. Do Not Reintroduce Vehicle-Only Assumptions
 
-Avoid code that assumes:
+Wrong:
 
 ```text
 Listing always has Vehicle
 ```
 
-Marketplace code must respect:
+Correct marketplace root:
 
 ```text
 VEHICLE | PART
@@ -2848,197 +3519,224 @@ VEHICLE | PART
 
 ---
 
-## 201. Do Not Duplicate Shared Systems Per Category
+# 226. Do Not Duplicate Shared Systems
 
-Do not create:
+Avoid parallel:
 
 ```text
 VehicleMedia + PartMedia
 VehicleFavorites + PartFavorites
 VehicleMessaging + PartMessaging
-VehicleAudit + PartAudit
+VehicleNotifications + PartNotifications
 ```
 
-when common Listing identity already solves ownership.
+when common Listing identity already solves the relationship.
 
 ---
 
-## 202. Do Not Flatten All Subtypes Into Listing
+# 227. Do Not Flatten Every Subtype Into Listing
 
-The opposite extreme is also wrong.
+Do not create one giant `listings` table or DTO with dozens of category-only nullable fields.
 
-Do not move every Vehicle/Part field into one giant `listings` table with dozens of nullable columns.
-
-Use explicit subtype data.
+Use explicit subtype structures.
 
 ---
 
-## 203. Do Not Build One Giant Nullable DTO
+# 228. Do Not Use Redis as Business Storage
 
-Prefer discriminated DTOs and subtype projections.
-
----
-
-## 204. Do Not Use Redis as Business Storage
-
-Redis failure must not erase authoritative business state.
+Redis loss must never erase authoritative business state.
 
 ---
 
-## 205. Do Not Use Client-Side Security
+# 229. Do Not Use Frontend as Security Boundary
 
-Frontend route guards and hidden controls improve UX only.
+Frontend route guards, disabled buttons, and hidden navigation are not authorization.
 
-Backend authorization is mandatory.
-
----
-
-## 206. Do Not Leak Exact Location
-
-Never introduce fallback from missing `publicPoint` to `exactPoint`.
-
-Not in:
-
-- list;
-- detail;
-- map;
-- cluster;
-- notification;
-- Saved Search;
-- logs.
+Backend enforcement is mandatory.
 
 ---
 
-## 207. Do Not Cluster Truncated Client Data as Truth
+# 230. Do Not Leak Exact Location
 
-Map clusters must represent the actual matching public points, not merely the first limited marker page.
-
----
-
-## 208. Do Not Duplicate Search Semantics
-
-Saved Searches, map filters, and future matching logic should reuse canonical Search semantics.
+Never expose `exactPoint` through public fallback behavior.
 
 ---
 
-## 209. Do Not Tie Business Transactions to External Delivery
+# 231. Do Not Duplicate Search Semantics
 
-Do not call slow external email/push providers inside a Listing/moderation/message database transaction.
-
-Persist durable intent first.
+Search, Map, Saved Searches, matching, and homepage filter entrypoints reuse canonical Search definitions.
 
 ---
 
-## 210. Do Not Assume Exactly-Once Background Processing
+# 232. Do Not Tie Business Transactions to External Delivery
 
-Outbox and worker consumers must tolerate replay.
+Do not call email/provider APIs while holding business database transactions.
+
+Persist durable intent.
+
+---
+
+# 233. Do Not Assume Exactly-Once
+
+Outbox, queues, delivery workers, and realtime must tolerate replay/missed transport.
+
+---
+
+# 234. Do Not Bypass the Design System
+
+Do not solve visual tasks by introducing feature-local replacements for existing shared primitives or tokens.
+
+Before creating a new UI primitive:
+
+1. inspect `components/ui`;
+2. inspect `docs/frontend/design-system.md`;
+3. decide whether the requirement is a new semantic component or merely another visual variant.
+
+---
+
+# 235. Do Not Change Business Logic During UI Redesign
+
+A frontend redesign task is not authorization to alter:
+
+- endpoint semantics;
+- DB state;
+- lifecycle rules;
+- Search behavior;
+- security policy;
+- concurrency contracts.
+
+If UI work uncovers a backend defect, report/fix it explicitly as a correctness issue rather than silently embedding new frontend semantics.
 
 ---
 
 # Future Extension Principles
 
-## 211. New Marketplace Categories
+## 236. New Marketplace Categories
 
-If a third marketplace category is introduced later:
+If another marketplace category is introduced:
 
-first evaluate extending the common Listing root + explicit subtype model.
+first evaluate extending:
 
-Do not clone the entire marketplace subsystem.
+```text
+Listing root + explicit subtype
+```
 
----
-
-## 212. Organizations / Dealers
-
-Future dealer/company seller support must not require changing Vehicle legal ownership semantics.
-
-Marketplace seller identity should evolve deliberately rather than attaching organization ownership directly to Vehicle.
+Do not clone the marketplace architecture.
 
 ---
 
-## 213. OpenSearch
+# 237. Organizations / Dealers
 
-If introduced later, PostgreSQL remains the source of truth.
+Future dealer/company seller support must evolve seller identity deliberately.
 
-A secondary search index must be rebuildable from authoritative data.
+Do not attach organization ownership semantics directly to Vehicle.
 
 ---
 
-## 214. External OEM / Compatibility Provider
+# 238. External Search Platform
 
-If external verified compatibility is introduced:
+If OpenSearch or another search engine is introduced later:
 
-keep distinction between:
+PostgreSQL remains authoritative.
+
+The secondary index must be rebuildable.
+
+---
+
+# 239. External OEM / Compatibility Provider
+
+If verified compatibility is added, preserve distinction between:
 
 ```text
 seller-declared fitment
 verified/catalog fitment
 ```
 
-Do not silently overwrite provenance.
+Do not erase provenance.
 
 ---
 
-## 215. Shipping / Orders / Payments
+# 240. Shipping / Orders / Payments
 
 Future Parts commerce features such as:
 
 - shipping;
-- reservation;
+- reservations;
 - cart;
 - checkout;
 - payment;
-- partial inventory sale;
+- order fulfillment;
+- partial inventory sales;
 
-are separate domains.
+are separate business domains.
 
 Do not overload current Listing/Part lifecycle with accidental order-management semantics.
 
 ---
 
-## 216. Realtime
+# 241. Future Geo Scaling
 
-Future realtime Messaging/Notifications must use durable PostgreSQL state as truth.
+If measured production/staging demand eventually requires it, future paths may include:
 
-WebSocket delivery is transport.
+- deeper SQL optimization;
+- different aggregation strategies;
+- MVT/vector tiles;
+- specialized Geo/Search infrastructure.
 
-Missed events must be recoverable through authoritative HTTP/database state.
-
----
-
-## 217. Commercial Features
-
-Features such as:
-
-- promoted listings;
-- subscriptions;
-- dealership plans;
-- VIN/history integrations;
-- financing;
-- insurance;
-- recommendation engines;
-
-must integrate without weakening current marketplace correctness and privacy boundaries.
+Do not implement these solely from local benchmark anxiety.
 
 ---
 
-# Final Rule
+# 242. Future UI Themes
 
-## 218. Preserve the System's Invariants
+A future:
 
-When uncertain, prefer the design that preserves:
+- dark theme;
+- client branding layer;
+- white-label system;
 
-```text
-one common Listing identity
-explicit product subtypes
-backend authorization
-database integrity
-private exact location
-public allowlisted DTOs
-transactional concurrency safety
-durable events
-idempotent workers
-measured database performance
-clear module ownership
-```
+should extend the token/design-system architecture.
 
-Do not trade these invariants for implementation convenience.
+Do not duplicate the entire frontend.
+
+---
+
+# Core Invariants
+
+Before completing substantial work, verify that the following still hold:
+
+1. `Listing` remains the common marketplace identity.
+2. Cars and Parts use explicit subtype data.
+3. Cars and Parts share platform capabilities where semantics are common.
+4. Seller identity comes from authenticated principal.
+5. Backend authorization protects every private resource.
+6. ADMIN does not accidentally bypass seller ownership APIs.
+7. Listing mutations preserve optimistic concurrency.
+8. Publication revalidates current invariants.
+9. PostgreSQL remains authoritative.
+10. Redis remains ephemeral/non-authoritative.
+11. Database changes happen only through migrations.
+12. `synchronize` remains disabled.
+13. Exact location never leaks publicly.
+14. Public Map uses public-safe location.
+15. Search/Map/Saved Search semantics remain canonical.
+16. Media processing remains bounded and recoverable.
+17. External provider I/O remains outside business transactions.
+18. Outbox/workers tolerate at-least-once execution.
+19. Notifications and email delivery remain separate concepts.
+20. Messaging remains Listing-scoped and participant-protected.
+21. Realtime remains best-effort transport over durable state.
+22. Frontend uses one shared realtime connection architecture.
+23. Access JWT remains memory-only in browser.
+24. Refresh credentials remain HttpOnly and digest-backed.
+25. Session/account changes respect persisted security state.
+26. Current UI changes reuse the shared design system.
+27. UI redesign does not alter domain/API behavior accidentally.
+28. Cars and Parts remain visually equal marketplace categories.
+29. Accessibility remains a first-class requirement.
+30. Playwright remains a required browser regression gate for substantial frontend work.
+31. Production migrations remain a dedicated deployment step.
+32. Production artifacts remain immutable/versioned.
+33. Internal metrics/ops endpoints do not become public application surfaces.
+34. Repository readiness is not falsely described as actual production readiness.
+35. Verification reports describe commands that actually ran.

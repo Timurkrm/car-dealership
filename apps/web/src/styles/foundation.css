@@ -1,0 +1,320 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+h1,
+h2,
+h3 {
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-heading);
+  overflow-wrap: anywhere;
+}
+h1 {
+  font-size: var(--text-h1);
+  letter-spacing: -0.025em;
+}
+h2 {
+  font-size: var(--text-h2);
+  letter-spacing: -0.015em;
+}
+h3 {
+  font-size: var(--text-h3);
+}
+a {
+  color: var(--color-primary);
+  text-underline-offset: 0.2em;
+}
+a:hover {
+  color: var(--color-primary-hover);
+}
+main {
+  width: 100%;
+  max-width: var(--container-content);
+  margin-inline: auto;
+  padding: var(--space-8) var(--page-gutter) var(--space-16);
+}
+:where(button, input, textarea, select) {
+  font-family: inherit;
+  font-size: var(--text-body);
+}
+/* Legacy controls share the foundation until their feature adopts UI primitives. */
+:where(button, .ui-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+  line-height: 1.4;
+  font-weight: var(--weight-medium);
+  text-align: center;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  overflow-wrap: anywhere;
+}
+:where(button):hover {
+  background: var(--color-surface-muted);
+  border-color: var(--color-primary);
+}
+:where(button):active {
+  background: var(--color-primary-soft);
+}
+:where(button):disabled {
+  cursor: not-allowed;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-color: var(--color-border);
+  opacity: 1;
+}
+:where(input:not([type='checkbox'], [type='radio']), select, textarea) {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+:where(textarea) {
+  resize: vertical;
+  line-height: var(--leading-body);
+}
+:where(input, textarea)::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+:where(input, textarea, select):disabled {
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
+:where(input[readonly]) {
+  background: var(--color-surface-muted);
+}
+:where(input, textarea, select)[aria-invalid='true'] {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
+}
+:where(input[type='checkbox'], input[type='radio']) {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  accent-color: var(--color-primary);
+}
+:where(label:has(> input[type='checkbox']), label:has(> input[type='radio'])) {
+  min-height: 2.75rem;
+}
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+summary {
+  cursor: pointer;
+  min-height: var(--control-height);
+  padding-block: var(--space-2);
+}
+fieldset {
+  min-width: 0;
+}
+legend {
+  padding-inline: var(--space-2);
+}
+img {
+  max-width: 100%;
+}
+small {
+  font-size: var(--text-small);
+}
+nav,
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.site-nav {
+  max-width: var(--container-content);
+  padding: var(--space-4) var(--page-gutter);
+  border-color: var(--color-border);
+}
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+}
+.site-nav a:hover {
+  text-decoration: underline;
+}
+.skip-link {
+  z-index: 10;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+.catalog-page {
+  max-width: var(--container-public);
+}
+.workspace-page {
+  max-width: var(--container-content);
+}
+.auth-page {
+  max-width: var(--container-form);
+}
+.auth-page > .ui-card {
+  padding: var(--space-6);
+}
+.auth-page nav {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  gap: var(--space-2) var(--space-5);
+}
+.auth-page nav a {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-small);
+}
+.auth-form fieldset {
+  display: grid;
+  gap: var(--space-4);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.auth-form label {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-small);
+}
+.auth-form p[id] {
+  color: var(--color-text-secondary);
+  font-size: var(--text-small);
+  margin-block: 0;
+}
+.auth-form .ui-button[type='submit'] {
+  width: 100%;
+}
+.listing-form label:has(> input[type='checkbox']),
+.listing-form label:has(> input[type='radio']) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-height);
+}
+.ui-input {
+  font-size: var(--text-body);
+}
+.auth-page > .ui-card > details {
+  font-size: var(--text-small);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+  margin-bottom: 0;
+}
+.account-navigation {
+  gap: var(--space-2);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+.account-navigation a {
+  padding: var(--space-2) var(--space-3);
+  min-height: 2.75rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+.account-navigation a:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.settings-panel {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--panel-space);
+}
+.settings-panel > h2 {
+  margin-top: 0;
+}
+.ui-metadata {
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+.ui-price {
+  font-size: var(--text-price);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.danger-button {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+.map-view-switcher button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+  box-shadow: inset 0 -3px 0 var(--color-primary-active);
+  font-weight: var(--weight-semibold);
+}
+.maplibregl-ctrl button {
+  border-radius: 0;
+  min-height: 2.75rem;
+  width: 2.75rem;
+}
+.maplibregl-ctrl button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+.map-preview-close {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+@media (min-width: 48rem) {
+  .auth-page {
+    padding-top: var(--space-12);
+  }
+  .auth-page > .ui-card {
+    padding: var(--space-10);
+  }
+}
+@media (max-width: 47.999rem) {
+  .ui-button--sm {
+    min-height: 2.75rem;
+  }
+  .workspace-filters > label {
+    width: 100%;
+    min-width: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

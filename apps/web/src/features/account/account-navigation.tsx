@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { WorkspaceNavigation } from '../administration/workspace-navigation';
 
 export function AccountNavigation() {
   return (
@@ -27,6 +28,7 @@ export function AccountNavigation() {
       <Link prefetch={false} href="/account/notifications/settings">
         Настройки уведомлений
       </Link>
+      <WorkspaceNavigation />
     </nav>
   );
 }

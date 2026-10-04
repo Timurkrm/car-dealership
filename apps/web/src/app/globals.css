@@ -1,35 +1,8 @@
-:root {
-  color-scheme: light dark;
-  font-family: system-ui, sans-serif;
-}
-body {
-  margin: 0;
-  line-height: 1.6;
-}
-main {
-  max-width: 60rem;
-  margin: 0 auto;
-  padding: clamp(1rem, 4vw, 3rem);
-}
-h1 {
-  font-size: clamp(1.6rem, 4vw, 2.4rem);
-  line-height: 1.25;
-}
 aside {
   margin-top: 2rem;
   padding: 1rem;
   border: 1px solid currentColor;
   border-radius: 0.5rem;
-}
-button {
-  font: inherit;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-a:focus-visible,
-button:focus-visible {
-  outline: 3px solid currentColor;
-  outline-offset: 4px;
 }
 .skip-link {
   position: absolute;
@@ -56,19 +29,6 @@ button:focus-visible {
   display: grid;
   gap: 0.3rem;
   margin-block: 0.5rem;
-}
-.auth-form input {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  padding: 0.65rem;
-  font: inherit;
-  border: 1px solid currentColor;
-  border-radius: 0.3rem;
-}
-input:focus-visible {
-  outline: 3px solid currentColor;
-  outline-offset: 3px;
 }
 nav,
 .auth-actions {
@@ -129,10 +89,6 @@ nav,
   .session-list li {
     grid-template-columns: 1fr;
   }
-}
-button:disabled {
-  cursor: wait;
-  opacity: 0.65;
 }
 dd {
   margin-inline-start: 0;
@@ -294,17 +250,6 @@ details {
   gap: 0.3rem;
   margin-block: 0.6rem;
 }
-.listing-form input,
-.listing-form select,
-.listing-form textarea {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  padding: 0.6rem;
-  font: inherit;
-  border: 1px solid currentColor;
-  border-radius: 0.3rem;
-}
 .listing-form textarea {
   resize: vertical;
 }
@@ -316,13 +261,9 @@ details {
 .checkbox-label input {
   width: auto;
 }
-select:focus-visible,
-textarea:focus-visible {
-  outline: 3px solid currentColor;
-  outline-offset: 3px;
-}
 .form-grid {
   display: grid;
+  align-items: start;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
   gap: 0.5rem 1.5rem;
 }

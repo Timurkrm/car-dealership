@@ -94,6 +94,7 @@ an internal monitoring route.
 
 - [Client handoff index](docs/handoff/README.md)
 - [Architecture](docs/architecture.md) and [data model](docs/data-model.md)
+- [Frontend design system, shell and result cards (UI-1–UI-3)](docs/frontend/design-system.md)
 - [Deployment contract](docs/deployment/README.md)
 - [Environment reference](docs/deployment/environment.md)
 - [Operations runbook](docs/operations/runbook.md) and [monitoring](docs/operations/monitoring.md)

@@ -2,22 +2,29 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useAuth } from '../auth/auth-provider';
+import { EmptyState, ErrorState } from '../../components/ui/feedback';
+import { LoadingState } from '../../components/ui/loading';
 
 export function EngagementBoundary({ children }: { children: ReactNode }) {
   const { client, status } = useAuth();
-  if (status === 'loading') return <p role="status">Проверяем вход…</p>;
+  if (status === 'loading') return <LoadingState label="Проверяем вход…" />;
   if (status === 'unavailable')
     return (
-      <p role="alert">
-        Сервис входа временно недоступен.{' '}
-        <button onClick={() => void client.bootstrap()}>Повторить</button>
-      </p>
+      <ErrorState
+        description="Сервис входа временно недоступен."
+        onRetry={() => void client.bootstrap()}
+      />
     );
   if (status !== 'authenticated')
     return (
-      <p>
-        Чтобы открыть личный раздел, <Link href="/login">войдите</Link>.
-      </p>
+      <EmptyState
+        title="Войдите в аккаунт"
+        description={
+          <>
+            Чтобы открыть личный раздел, <Link href="/login">войдите</Link>.
+          </>
+        }
+      />
     );
   return children;
 }

@@ -4,8 +4,12 @@ export function SellChoice() {
     <main id="main">
       <h1>Что вы хотите продать?</h1>
       <div className="auth-actions">
-        <Link href="/sell/car">Автомобиль</Link>
-        <Link href="/sell/part">Запчасть</Link>
+        <Link prefetch={false} href="/sell/car">
+          Автомобиль
+        </Link>
+        <Link prefetch={false} href="/sell/part">
+          Запчасть
+        </Link>
       </div>
     </main>
   );

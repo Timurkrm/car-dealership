@@ -1,4 +1,5 @@
 import { AuthApiError } from '../auth/auth-client';
+import { Alert } from '../../components/ui/feedback';
 
 export function listingErrorMessage(error: unknown): string {
   if (!(error instanceof AuthApiError))
@@ -54,5 +55,7 @@ export function listingErrorMessage(error: unknown): string {
   );
 }
 export function ListingError({ error }: { error: unknown }) {
-  return error ? <p role="alert">{listingErrorMessage(error)}</p> : null;
+  return error ? (
+    <Alert tone="error">{listingErrorMessage(error)}</Alert>
+  ) : null;
 }

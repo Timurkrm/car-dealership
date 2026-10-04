@@ -11,7 +11,16 @@ const files = markdownFiles(root).filter(
 const failures = [];
 for (const file of files) {
   const content = readFileSync(file, 'utf8');
-  if (/[A-Za-z]:[\\/]Users[\\/]/.test(content) || /file:\/\//i.test(content))
+  // Repository guidance illustrates forbidden paths with literal ellipsis-only
+  // examples. Ignore only those complete placeholder lines, never real paths.
+  const pathContent = content.replace(
+    /^(?:[A-Za-z]:[\\/]Users[\\/]\.\.\.|file:\/\/\.\.\.)\r?$/gm,
+    '',
+  );
+  if (
+    /[A-Za-z]:[\\/]Users[\\/]/.test(pathContent) ||
+    /file:\/\//i.test(pathContent)
+  )
     failures.push(`${relative(file)}: contains a developer absolute path`);
   for (const match of content.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
     const raw = match[1]?.trim().replace(/^<|>$/g, '');

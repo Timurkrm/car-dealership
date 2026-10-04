@@ -1,48 +1,80 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useAuth } from '../auth/auth-provider';
 import { loginHref } from '../auth/auth-return';
-import { EngagementClient } from './engagement-client';
-
-export function FavoriteButton({ listingId }: { listingId: string }) {
-  const { client, status } = useAuth();
+import { useFavoriteState } from './favorite-provider';
+import { Button, IconButton } from '../../components/ui/button';
+import { Icon } from '../../components/ui/icon';
+export function FavoriteButton({
+  listingId,
+  variant = 'text',
+  removeOnly = false,
+  onRemoved,
+}: {
+  listingId: string;
+  variant?: 'text' | 'icon';
+  removeOnly?: boolean;
+  onRemoved?: () => void;
+}) {
+  const { status } = useAuth();
   const pathname = usePathname();
-  const api = useMemo(() => new EngagementClient(client), [client]);
-  const [favorite, setFavorite] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
+  const store = useFavoriteState();
+  const state = useSyncExternalStore(
+    store.subscribe,
+    () => store.read(listingId),
+    store.serverSnapshot,
+  );
+  const saved = removeOnly || state.value === true;
+  const label = saved ? 'Удалить из избранного' : 'Добавить в избранное';
+  const icon = (
+    <Icon name="heart" className={saved ? 'favorite-heart--saved' : ''} />
+  );
+  if (status === 'anonymous')
+    return (
+      <Link
+        prefetch={false}
+        href={loginHref(pathname)}
+        className={variant === 'icon' ? 'favorite-login' : undefined}
+        aria-label="Войти, чтобы добавить в избранное"
+      >
+        {variant === 'icon' ? icon : 'Войти, чтобы добавить в избранное'}
+      </Link>
+    );
   if (status !== 'authenticated')
-    return status === 'anonymous' ? (
-      <Link href={loginHref(pathname)}>Войти, чтобы добавить в избранное</Link>
+    return variant === 'icon' ? (
+      <IconButton label="Избранное недоступно до проверки входа" disabled>
+        {icon}
+      </IconButton>
     ) : null;
   async function toggle() {
-    const previous = favorite;
-    setFavorite(!previous);
-    setBusy(true);
-    setError(false);
-    try {
-      if (previous) await api.unfavorite(listingId);
-      else await api.favorite(listingId);
-    } catch {
-      setFavorite(previous);
-      setError(true);
-    } finally {
-      setBusy(false);
+    if (await store.set(listingId, !saved)) {
+      if (saved) onRemoved?.();
     }
   }
+  const props = {
+    disabled: state.pending,
+    loading: state.pending,
+    'aria-pressed': state.value === null && !removeOnly ? undefined : saved,
+    onClick: () => void toggle(),
+  };
   return (
     <span className="favorite-control">
-      <button
-        type="button"
-        aria-pressed={favorite}
-        disabled={busy}
-        onClick={() => void toggle()}
-      >
-        {favorite ? 'В избранном' : 'В избранное'}
-      </button>
-      {error ? <span role="alert"> Не удалось сохранить.</span> : null}
+      {variant === 'icon' ? (
+        <IconButton label={label} {...props}>
+          {icon}
+        </IconButton>
+      ) : (
+        <Button variant="outline" {...props}>
+          {label}
+        </Button>
+      )}
+      {state.error && (
+        <span className="favorite-error" role="alert">
+          Не удалось сохранить. Попробуйте ещё раз.
+        </span>
+      )}
     </span>
   );
 }

@@ -3,6 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/auth-provider';
 import { AuthApiError } from '../auth/auth-client';
 import { AccountClient, type AccountProfile } from './account-client';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/field';
+import { Alert } from '../../components/ui/feedback';
+import { LoadingState } from '../../components/ui/loading';
 
 const errorText = (error: unknown) =>
   error instanceof AuthApiError && error.code === 'VALIDATION_ERROR'
@@ -30,7 +34,7 @@ export function ProfileScreen() {
       });
     return () => controller.abort();
   }, [api]);
-  if (!profile && !error) return <p role="status">Загружаем профиль…</p>;
+  if (!profile && !error) return <LoadingState label="Загружаем профиль…" />;
   return (
     <section className="settings-panel">
       <h2>Профиль</h2>
@@ -54,29 +58,32 @@ export function ProfileScreen() {
         }}
       >
         <fieldset disabled={busy || !profile}>
-          <label>
-            Отображаемое имя
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
-              minLength={1}
-              maxLength={100}
-              autoComplete="name"
-            />
-          </label>
-          <label>
-            Email
-            <input value={profile?.email ?? ''} readOnly type="email" />
-          </label>
+          <Input
+            label="Отображаемое имя"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
+            minLength={1}
+            maxLength={100}
+            autoComplete="name"
+          />
+          <Input
+            label="Email"
+            hint="Изменить адрес можно в разделе «Безопасность»."
+            value={profile?.email ?? ''}
+            readOnly
+            type="email"
+          />
           {profile?.pendingEmail && (
-            <p role="status">Ожидает подтверждения: {profile.pendingEmail}</p>
+            <Alert>Ожидает подтверждения: {profile.pendingEmail}</Alert>
           )}
-          <button>Сохранить</button>
+          <Button type="submit" loading={busy}>
+            Сохранить
+          </Button>
         </fieldset>
       </form>
-      {saved && <p role="status">{saved}</p>}
-      {error && <p role="alert">{error}</p>}
+      {saved && <Alert tone="success">{saved}</Alert>}
+      {error && <Alert tone="error">{error}</Alert>}
     </section>
   );
 }

@@ -21,7 +21,10 @@ import {
 } from '../listings/listing-form-model';
 import { SearchClient } from '../search/search-client';
 import { SearchSession } from '../search/search-session';
-import { SearchCard } from '../search/search-card';
+import { MarketplaceResult } from '../results/marketplace-result';
+import { EmptyState } from '../../components/ui/feedback';
+import { Button } from '../../components/ui/button';
+import { ResultLayout, ResultLoading } from '../results/result-layout';
 import { SearchFacetSummary } from '../search/search-facets';
 import {
   requestSearchOrigin,
@@ -529,7 +532,10 @@ export function PartCatalogScreen() {
               parameters={parameters}
             />
             {state.loading && state.items.length === 0 && (
-              <p role="status">Загружаем запчасти…</p>
+              <>
+                <p role="status">Загружаем запчасти…</p>
+                <ResultLoading />
+              </>
             )}
             <ListingError error={state.error} />
             {Boolean(state.error) && (
@@ -538,22 +544,28 @@ export function PartCatalogScreen() {
               </button>
             )}
             {!state.loading && !state.error && state.items.length === 0 && (
-              <p>
-                По вашему запросу ничего не найдено.{' '}
-                <button onClick={() => navigate({})}>Сбросить фильтры</button>
-              </p>
-            )}
-            {state.items.map((listing) => (
-              <SearchCard
-                key={listing.id}
-                listing={listing}
-                selected={listing.id === selectedId}
-                onSelect={onSelect}
-                onNavigate={() => {
-                  navigating.current = true;
-                }}
+              <EmptyState
+                title="По вашему запросу ничего не найдено"
+                action={
+                  <Button variant="outline" onClick={() => navigate({})}>
+                    Сбросить фильтры
+                  </Button>
+                }
               />
-            ))}
+            )}
+            <ResultLayout>
+              {state.items.map((listing) => (
+                <MarketplaceResult
+                  key={listing.id}
+                  listing={listing}
+                  selected={listing.id === selectedId}
+                  onSelect={onSelect}
+                  onNavigate={() => {
+                    navigating.current = true;
+                  }}
+                />
+              ))}
+            </ResultLayout>
             <button
               disabled={state.loading || !state.nextCursor}
               onClick={() => void session.loadMore()}

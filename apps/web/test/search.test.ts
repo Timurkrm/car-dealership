@@ -22,6 +22,7 @@ import { SearchResults } from '../src/features/search/search-screen';
 import { SearchFilters } from '../src/features/search/search-filters';
 import { AuthClient, AuthApiError } from '../src/features/auth/auth-client';
 import { AuthProvider } from '../src/features/auth/auth-provider';
+import { FavoriteProvider } from '../src/features/engagement/favorite-provider';
 import { ListingApi } from '../src/features/listings/listing-api';
 import {
   boundsParameter,
@@ -325,16 +326,20 @@ test('distance, empty/loading/error/card rendering is accessible and has no fals
     createElement(
       AuthProvider,
       null,
-      createElement(SearchResults, {
-        state: {
-          key: '',
-          items: page().items,
-          nextCursor: null,
-          loading: false,
-          error: null,
-        },
-        onReset: () => {},
-      }),
+      createElement(
+        FavoriteProvider,
+        null,
+        createElement(SearchResults, {
+          state: {
+            key: '',
+            items: page().items,
+            nextCursor: null,
+            loading: false,
+            error: null,
+          },
+          onReset: () => {},
+        }),
+      ),
     ),
   );
   assert.ok(card.includes('&lt;script&gt;'));

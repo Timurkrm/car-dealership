@@ -1,15 +1,19 @@
 import { AccountNavigation } from '../../../features/account/account-navigation';
 import { ProfileScreen } from '../../../features/account/profile-screen';
 import { EngagementBoundary } from '../../../features/engagement/engagement-boundary';
+import { Container, PageHeader } from '../../../components/ui/layout';
 export const metadata = { title: 'Профиль' };
 export default function Page() {
   return (
-    <main id="main" className="workspace-page">
-      <h1>Профиль</h1>
+    <Container as="main" id="main">
+      <PageHeader
+        title="Профиль"
+        description="Ваши данные в Automotive Marketplace."
+      />
       <AccountNavigation />
       <EngagementBoundary>
         <ProfileScreen />
       </EngagementBoundary>
-    </main>
+    </Container>
   );
 }
