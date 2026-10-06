@@ -15,9 +15,6 @@ import { PartApi } from '../parts/part-api';
 import { PartForm } from '../parts/part-form';
 import { PartDetails } from '../parts/part-details';
 import { MediaEditor } from '../media/media-editor';
-import { MediaGallery } from '../media/media-gallery';
-import { FavoriteButton } from '../engagement/favorite-button';
-import { ContactSellerButton } from '../messaging/contact-seller-button';
 
 function OwnerDetail({ id }: { id: string }) {
   const { client } = useAuth();
@@ -212,75 +209,6 @@ export function SellerDetailScreen({ id }: { id: string }) {
       <SellerBoundary>
         <OwnerDetail key={id} id={id} />
       </SellerBoundary>
-    </main>
-  );
-}
-export function PublicDetailScreen({ id }: { id: string }) {
-  const { client } = useAuth();
-  const api = useMemo(() => new ListingApi(client), [client]);
-  const [reload, setReload] = useState(0);
-  const resource = useListingResource(
-    useCallback(
-      (signal: AbortSignal) => {
-        void reload;
-        return api.publicDetail(id, signal);
-      },
-      [api, id, reload],
-    ),
-  );
-  const listing = resource.value;
-  return (
-    <main id="main">
-      <p>
-        <Link prefetch={false} href="/cars">
-          Все автомобили
-        </Link>
-      </p>
-      <h1>{listing?.title ?? 'Объявление'}</h1>
-      {resource.loading && <p role="status">Загружаем автомобиль…</p>}
-      <ListingError error={resource.error} />
-      {resource.error ? (
-        <button onClick={() => setReload((value) => value + 1)}>
-          Повторить
-        </button>
-      ) : null}
-      {listing && (
-        <>
-          <FavoriteButton listingId={listing.id} />
-          <ContactSellerButton
-            listingId={listing.id}
-            sellerId={listing.seller.id}
-          />
-          <p>
-            {decimalFromMinor(
-              listing.price.amountMinor,
-              listing.price.currency,
-            )}{' '}
-            {listing.price.currency} · {STATUS_LABELS[listing.status]}
-          </p>
-          <VehicleDetails vehicle={listing.vehicle} />
-          <h2>Описание</h2>
-          <MediaGallery photos={listing.media ?? []} />
-          <button onClick={() => setReload((value) => value + 1)}>
-            Обновить фотографии
-          </button>
-          <ListingDescription description={listing.description} />
-          <h2>Местоположение</h2>
-          <p>
-            {listing.location
-              ? `${listing.location.city}${listing.location.region ? `, ${listing.location.region}` : ''}, ${listing.location.countryCode}`
-              : 'Не указано'}
-          </p>
-          {listing.location?.publicPoint && (
-            <p>
-              Публичная точка: {listing.location.publicPoint.latitude},{' '}
-              {listing.location.publicPoint.longitude}
-            </p>
-          )}
-          <h2>Продавец</h2>
-          <p>{listing.seller.displayName}</p>
-        </>
-      )}
     </main>
   );
 }

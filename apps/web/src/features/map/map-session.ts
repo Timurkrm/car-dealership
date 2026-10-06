@@ -34,7 +34,8 @@ export class MapSession {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   };
-  schedule(key: string): void {
+  schedule(key: string, force = false): void {
+    if (!force && this.state.key === key) return;
     if (this.timer) clearTimeout(this.timer);
     this.controller?.abort();
     const epoch = ++this.epoch;
@@ -42,7 +43,7 @@ export class MapSession {
     this.timer = setTimeout(() => void this.request(key, epoch), this.delayMs);
   }
   retry(): void {
-    if (this.state.key) this.schedule(this.state.key);
+    if (this.state.key) this.schedule(this.state.key, true);
   }
   dispose(): void {
     if (this.timer) clearTimeout(this.timer);

@@ -7,6 +7,8 @@ import { loginHref } from '../auth/auth-return';
 import type { SearchParameters } from '../search/search-parameters';
 import type { ListingType } from './engagement-client';
 import { EngagementClient } from './engagement-client';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/field';
 
 export function SaveSearchButton({
   type,
@@ -25,7 +27,15 @@ export function SaveSearchButton({
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState<string | null>(null);
   if (status === 'anonymous')
-    return <Link href={loginHref(pathname)}>Войти, чтобы сохранить поиск</Link>;
+    return (
+      <Link
+        prefetch={false}
+        className="ui-button ui-button--outline"
+        href={loginHref(pathname)}
+      >
+        Войти, чтобы сохранить поиск
+      </Link>
+    );
   if (status !== 'authenticated') return null;
   if (privateOrigin)
     return (
@@ -36,12 +46,16 @@ export function SaveSearchButton({
     );
   if (!open)
     return (
-      <button type="button" onClick={() => setOpen(true)}>
-        Сохранить поиск
-      </button>
+      <div className="search-save">
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          Сохранить поиск
+        </Button>
+        {message && <p role="status">{message}</p>}
+      </div>
     );
   return (
     <form
+      className="search-save"
       onSubmit={(event) => {
         event.preventDefault();
         setBusy(true);
@@ -61,19 +75,19 @@ export function SaveSearchButton({
           .finally(() => setBusy(false));
       }}
     >
-      <label>
-        Название поиска{' '}
-        <input
-          required
-          maxLength={120}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
-      </label>{' '}
-      <button disabled={busy}>Сохранить с уведомлениями</button>{' '}
-      <button type="button" onClick={() => setOpen(false)}>
+      <Input
+        label="Название поиска"
+        required
+        maxLength={120}
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+      />
+      <Button type="submit" loading={busy}>
+        Сохранить с уведомлениями
+      </Button>{' '}
+      <Button variant="ghost" onClick={() => setOpen(false)}>
         Отмена
-      </button>
+      </Button>
       {message ? <span role="status"> {message}</span> : null}
     </form>
   );

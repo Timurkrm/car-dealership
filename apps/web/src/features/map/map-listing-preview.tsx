@@ -1,36 +1,37 @@
 'use client';
-import Image from 'next/image';
 import Link from 'next/link';
 import type {
   PartMapFeature,
   VehicleMapFeature,
 } from '../search/search-client';
-import { decimalFromMinor } from '../listings/listing-form-model';
-import { formatSearchDistance } from '../search/search-parameters';
+import { ResultMedia } from '../results/result-media';
+import { ResultPrice, ResultLocation } from '../results/result-card-shell';
+import { PART_CONDITION_LABELS } from '../parts/part-labels';
+import { Button } from '../../components/ui/button';
 
 export function MapListingPreview({
   feature,
   onClose,
+  onNavigate,
 }: {
   feature: VehicleMapFeature | PartMapFeature;
   onClose: () => void;
+  onNavigate?: () => void;
 }) {
-  const distance = formatSearchDistance(feature.location.distanceMeters);
   return (
     <article className="map-preview" aria-label="Выбранное объявление">
-      <button
+      <Button
+        variant="ghost"
         className="map-preview-close"
         onClick={onClose}
         aria-label="Закрыть"
       >
         ×
-      </button>
-      <Image
-        unoptimized
-        src={feature.cover.url}
-        width={feature.cover.width}
-        height={feature.cover.height}
-        alt=""
+      </Button>
+      <ResultMedia
+        cover={feature.cover}
+        type={feature.type}
+        label={feature.title}
       />
       <div>
         <h2>{feature.title}</h2>
@@ -43,23 +44,25 @@ export function MapListingPreview({
         ) : (
           <p>
             {feature.part.name} · {feature.part.category} ·{' '}
-            {feature.part.brand ?? 'Без бренда'} · {feature.part.condition} ·{' '}
+            {[
+              feature.part.brand,
+              PART_CONDITION_LABELS[
+                feature.part.condition as keyof typeof PART_CONDITION_LABELS
+              ],
+            ]
+              .filter(Boolean)
+              .join(' · ')}{' '}
+            ·{' '}
             {feature.part.fitment.mode === 'UNIVERSAL'
               ? 'Универсальная'
               : `${feature.part.fitment.count} совместимостей`}
           </p>
         )}
-        <p>
-          {decimalFromMinor(feature.price.amountMinor, feature.price.currency)}{' '}
-          {feature.price.currency}
-        </p>
-        <p>
-          {[feature.location.city, feature.location.region]
-            .filter(Boolean)
-            .join(', ')}
-          {distance ? ` · ${distance}` : ''}
-        </p>
+        <ResultPrice price={feature.price} unit={feature.type === 'PART'} />
+        <ResultLocation location={feature.location} />
         <Link
+          prefetch={false}
+          onClick={onNavigate}
           href={
             feature.type === 'VEHICLE'
               ? `/listings/${feature.listingId}`

@@ -1,6 +1,7 @@
 import { AuthApiError } from '../auth/auth-client';
 import { CURRENCIES, PART_CONDITIONS } from '../listings/listing-types';
 import type { SearchParameters } from '../search/search-parameters';
+import { minorFromDecimal } from '../listings/listing-form-model';
 
 export const PART_FILTER_KEYS = [
   'categoryId',
@@ -27,6 +28,57 @@ export const PART_FILTER_KEYS = [
 ] as const;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const PART_NUMBER = /^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,99}$/;
+
+/** Form adapter only; authoritative validation and number normalization stay unchanged. */
+export function partFilterFormParameters(
+  data: FormData,
+  draft: SearchParameters,
+): SearchParameters {
+  const next: SearchParameters = {};
+  for (const key of [
+    'compatibleMakeId',
+    'compatibleModelId',
+    'compatibleGenerationId',
+  ])
+    if (draft[key]) next[key] = draft[key];
+  for (const key of [
+    'categoryId',
+    'brandId',
+    'partNumber',
+    'oemNumber',
+    'manufacturerPartNumber',
+    'compatibleYear',
+    'currency',
+    'lat',
+    'lng',
+    'radiusMeters',
+    'bbox',
+    'sort',
+  ]) {
+    const value = data.get(key);
+    if (typeof value === 'string' && value.trim()) next[key] = value.trim();
+  }
+  for (const key of ['condition', 'fitmentMode']) {
+    const values = data
+      .getAll(key)
+      .filter((value): value is string => typeof value === 'string');
+    if (values.length) next[key] = values.sort().join(',');
+  }
+  for (const key of ['includeUniversal', 'includeSubcategories'])
+    next[key] = data.has(key) ? 'true' : 'false';
+  for (const bound of ['From', 'To']) {
+    const value = data.get(`price${bound}`);
+    if (typeof value === 'string' && value.trim()) {
+      if (!next.currency) throw new Error('Для цены выберите валюту.');
+      next[`price${bound}Minor`] = /^0(?:[.,]0{1,2})?$/.test(value.trim())
+        ? '0'
+        : minorFromDecimal(value, next.currency);
+    }
+  }
+  const error = validatePartSearch(next);
+  if (error) throw new Error(error);
+  return next;
+}
 
 function validCoordinate(value: string, max: number) {
   return (

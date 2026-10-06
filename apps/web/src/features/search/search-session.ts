@@ -1,5 +1,6 @@
 import type { SearchItem, SearchPage } from './search-client';
 import type { SearchParameters } from './search-parameters';
+import { AuthApiError } from '../auth/auth-client';
 
 export interface SearchSessionState {
   key: string;
@@ -54,6 +55,11 @@ export class SearchSession {
     if (this.state.loading || !this.state.nextCursor) return Promise.resolve();
     return this.request(this.state.nextCursor, true);
   }
+  retry(): Promise<void> {
+    return this.state.nextCursor
+      ? this.loadMore()
+      : this.reset(this.state.key, this.parameters);
+  }
   dispose(): void {
     this.controller?.abort();
     this.epoch++;
@@ -75,13 +81,29 @@ export class SearchSession {
         ...this.state,
         items: [
           ...previous,
-          ...page.items.filter((item) => !seen.has(item.id)),
+          ...page.items.filter((item) => {
+            if (seen.has(item.id)) return false;
+            seen.add(item.id);
+            return true;
+          }),
         ],
         nextCursor: page.page.nextCursor,
         loading: false,
         error: null,
       });
     } catch (error: unknown) {
+      if (
+        !controller.signal.aborted &&
+        epoch === this.epoch &&
+        cursor &&
+        error instanceof AuthApiError &&
+        ['SEARCH_INVALID_CURSOR', 'SEARCH_CURSOR_QUERY_MISMATCH'].includes(
+          error.code,
+        )
+      ) {
+        await this.reset(this.state.key, this.parameters);
+        return;
+      }
       if (!controller.signal.aborted && epoch === this.epoch)
         this.update({ ...this.state, loading: false, error });
     }

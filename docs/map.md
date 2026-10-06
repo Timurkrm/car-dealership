@@ -9,7 +9,7 @@ progressive fallback when WebGL, the style provider or tile delivery is unavaila
 
 MapLibre is loaded with a client-only dynamic import. A mounted map instance survives
 filter, viewport and response changes. One GeoJSON source drives cluster and listing
-layers, and a separate source draws the selected listing. The implementation does not
+layers, and separate sources draw selected and hovered listings. Styles use shared UI tokens. The implementation does not
 create a DOM marker per result.
 
 ## Backend map contract
@@ -115,7 +115,7 @@ entries. It does not change `bbox`.
 “Искать в этой области” promotes the current viewport to the search `bbox`, removes
 radius/origin and distance sorting, clears cursor pagination and creates a navigation
 entry. Selection is keyed by listing ID. Selecting a loaded card highlights its marker;
-selecting a marker focuses a loaded card or shows the marker preview without loading
+selecting a marker scrolls a loaded card without taking focus or shows a preview without loading
 additional list pages.
 
 ## Provider and security configuration
@@ -141,9 +141,9 @@ has an explicit accessible label and count announcement, and MapLibre navigation
 controls remain available. Individual map features are not emitted as hundreds of
 screen-reader DOM nodes. Cluster fit/zoom honors `prefers-reduced-motion`.
 
-At widths through 760 px the Split default renders as List, its Split control is hidden,
+At widths below 1200 px the Split default renders as List, its Split control is hidden,
 and Map is an explicit full-height mode with a compact bottom preview. Desktop Split
-uses a 40/60-style grid and a sticky map.
+uses equal list/map columns beside a compact filter sidebar and a sticky map below the header.
 
 ## Performance and query plans
 
@@ -163,6 +163,25 @@ latest measured table.
 There is no client or server tile cache, marker spiderfier, vector-tile path, heatmap,
 offline map, geocoder, address autocomplete, persisted last camera, or client-side
 clustering. Clusters do not span the ±180° Web Mercator seam; a crossing viewport can
-show separate clusters on either side while remaining correct. Browser Playwright is
-not installed, so automated coverage uses backend integration tests and frontend
-state/parser/render tests; the manual checklist is `docs/map-qa.md`.
+show separate clusters on either side while remaining correct. Playwright covers
+desktop Chromium, Firefox, WebKit and mobile emulation alongside backend integration
+and frontend state/parser/render tests. The manual checklist is `docs/map-qa.md`.
+
+## UI-4 viewport and filters
+
+`SearchWorkspace` owns the URL-backed applied query, while sidebar/drawer forms own
+unapplied drafts. List and map receive the same canonical subtype filters. Mode/camera
+presentation does not change the search fingerprint. A pending Apply/navigation guards
+against an older moveend replacing the new URL. Native history replacement updates
+camera state without triggering server navigation on every pan.
+
+Search This Area appears only after meaningful viewport movement (2% extent threshold,
+wrapped longitude comparison). Applying it removes private Near Me state and resets the
+list cursor. Browser origin is not persisted or serialized. Map requests are deduplicated
+per filter session/viewport; changing filters schedules a fresh request even when the
+camera has not moved. No new backend query plan is introduced by UI-4.
+
+Hover never pans or takes focus. Selection is scoped to filter identity and visible IDs;
+only existing public map features can be highlighted. List remains usable when a provider
+fails. Explicit style retry rebuilds layers from current data without replacing the map
+instance. Server clustering, feature limits, rounding and spatial privacy are unchanged.

@@ -20,6 +20,7 @@ import type { SearchPage } from '../src/features/search/search-client';
 import { SearchSession } from '../src/features/search/search-session';
 import { SearchResults } from '../src/features/search/search-screen';
 import { SearchFilters } from '../src/features/search/search-filters';
+import { SearchToolbar } from '../src/features/search/search-toolbar';
 import { AuthClient, AuthApiError } from '../src/features/auth/auth-client';
 import { AuthProvider } from '../src/features/auth/auth-provider';
 import { FavoriteProvider } from '../src/features/engagement/favorite-provider';
@@ -355,10 +356,17 @@ test('filter form renders optional catalog, explicit Apply, origin-gated distanc
   assert.ok(html.includes('Рядом со мной'));
   assert.ok(!html.includes('value="distance"'));
   const located = renderToStaticMarkup(
-    createElement(SearchFilters, {
-      api,
+    createElement(SearchToolbar, {
+      type: 'VEHICLE',
+      loaded: 0,
+      loading: false,
+      view: 'list',
+      mobile: false,
+      count: 0,
+      openFilters: () => {},
+      onView: () => {},
+      onSort: () => {},
       parameters: { lat: '0', lng: '0' },
-      onApply: () => {},
     }),
   );
   assert.ok(located.includes('value="distance"'));

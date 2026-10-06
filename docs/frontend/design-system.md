@@ -1,4 +1,4 @@
-# Automotive Marketplace design system — UI-1 / UI-2 / UI-3
+# Automotive Marketplace design system — UI-1 / UI-2 / UI-3 / UI-4
 
 ## Principles
 
@@ -8,7 +8,8 @@ priority over decoration. Cars and Parts share the same foundation.
 
 UI-1 establishes primitives and migrates representative auth/account/public
 headers. UI-2 adds the global shell and marketplace homepage described below.
-UI-3 establishes shared Vehicle/Part result cards. These stages preserve API
+UI-3 establishes shared Vehicle/Part result cards. UI-4 unifies the Cars/Parts
+Search workspace, filters and List/Map interaction. These stages preserve API
 contracts, permissions, canonical filter semantics and map behavior. Feature
 modules continue to own validation, submission,
 authorization, data fetching and domain status labels.
@@ -28,6 +29,7 @@ Load order in `apps/web/src/app/layout.tsx`:
 5. `styles/primitives.css`: shared `ui-*` classes.
 6. `styles/shell.css` and `styles/home.css`: UI-2 header/navigation and homepage.
 7. `styles/results.css`: UI-3 result cards and grid/list layout.
+8. `styles/search.css`: UI-4 workspace, filter drawer and map presentation.
 
 Primitives live in `apps/web/src/components/ui/`. Import the specific file; there
 is no application-wide client barrel. `Dialog` is the only explicitly client
@@ -603,3 +605,175 @@ tears down its containers, volumes and network. UI-3 introduces no API contract,
 database migration or dependency change. Server-compatible Home rendering is
 retained. Search controls, workspace/map visual redesign, detail, sell forms,
 Messaging and Admin/Moderation remain future UI stages.
+
+## Search Workspace (UI-4)
+
+Cars and Parts use `SearchWorkspace`, with subtype-specific `SearchFilters` and
+`PartSearchFilters`. The existing SearchClient, parsers, validators, cursor coordinator
+and MapSession remain the transport/state boundary. No backend query, DTO, migration,
+search engine or dependency changes are introduced. Server route wrappers and metadata
+remain intact; interactive search is client rendered as before.
+
+## Filter Sidebar
+
+Desktop filters occupy a 17rem sidebar. Forms maintain an unapplied draft and send one
+request on Apply, never per keystroke. Canonical catalog IDs, dependent selections,
+minor-unit money conversion and validation are reused. Make changes reset Model and
+Generation; Model resets Generation, including Parts fitment filters. Vehicle enums
+have readable labels and collapsible groups. Part categories display database-backed
+parent paths with bounded/cycle-safe traversal; manufacturers are separate from vehicle
+makes. Condition and fitment modes support the existing comma-separated multi-values.
+
+## Mobile Filters
+
+Below 1200px, an explicit Filters button opens the shared native Dialog drawer. It
+provides focus containment, Escape/backdrop dismissal, background scroll lock and
+focus return to the actual triggering button (including Safari pointer activation).
+Closing discards the draft; reopening starts from applied state. Show results validates,
+applies and closes. Reset clears applied filters. The action area remains reachable at
+the bottom with safe-area padding. No request runs for typing or checkbox toggles.
+
+## Active Filter Chips
+
+Chips represent applied state, not drafts. Reference labels use catalog/result names;
+unknown references have a safe generic label instead of printing UUIDs. Enum values and
+ranges are readable, and price rendering never converts minor units to floating point.
+Removing a multi-value chip preserves the other values. Removing a parent also removes
+its dependent children; removing currency clears price ranges/price sort; removing
+location clears radius/origin/bbox/distance sort. Clear filters resets the complete query.
+Exact browser coordinates never appear in chips.
+
+## Results Toolbar
+
+The toolbar shows only the number of loaded cards, not an invented exact total.
+Sorting uses the existing allowlists: Cars newest/price/mileage/year/distance, Parts
+newest/price/distance. Price options require currency, distance requires origin.
+Changing sort resets cursor pagination. Save Search retains the existing authorization,
+canonical filters, notification and private-origin restrictions and uses UI primitives.
+
+## View Modes
+
+Desktop offers List, Split and Map, with Split as the existing default. List uses UI-3
+grid cards; Split uses UI-3 list cards. Mobile/tablet offer List and Map; a Split URL
+renders as List without silently rewriting shared state. `view` and coarse camera
+parameters remain outside filter fingerprints. Apply pushes history, camera movement
+replaces presentation state; back/forward/reload restore canonical filters.
+
+## Map Workspace
+
+MapLibre remains dynamically imported, with one map instance retained across filter
+and view changes. Features update through GeoJSON source `setData`; ResizeObserver
+handles layout changes. Replaced styles recreate source/layers from current refs.
+The sticky map respects the global header height. Attribution and native map navigation
+remain present. Provider failure leaves List available and offers explicit style retry.
+No automatic retry loop or new geocoding/provider integration is introduced.
+
+## Markers
+
+Markers use publicPoint exclusively. Semantic colors distinguish Cars and Parts;
+selected and hover outlines use separate source/layers. There is no React DOM marker
+per result and no fallback from a missing public point to a private coordinate. Existing
+compact public previews reuse UI-3 media, money and location presenters.
+
+## Clusters
+
+Clustering remains server-assisted over the full filtered viewport before the feature
+limit, not over a client-truncated marker page. Existing count semantics and cluster
+fit-bounds/zoom behavior are retained, including antimeridian and reduced-motion handling.
+This UI stage does not modify cluster SQL or add client clustering.
+
+## Selected/Hover States
+
+Hover and selection are separate listing-ID states scoped to the current query. Card
+hover updates only a visible map feature, never pans the map, and clears on leave.
+Keyboard focus selects the corresponding listing. A marker selection scrolls a loaded
+card into view in Split without stealing focus; otherwise the compact preview is enough.
+Selection/hover whose ID is absent from both projections is not rendered. No extra
+pages are fetched to manufacture an out-of-viewport marker or card.
+
+## Search This Area
+
+Panning changes the map projection and coarse camera URL, not applied search bbox.
+The CTA appears after meaningful movement relative to the initial/applied viewport
+(2% of each extent, with a small rounding tolerance; wrapped longitudes supported).
+Applying it promotes bounds to bbox, removes origin/radius/distance sort, resets the
+cursor and hides the CTA until the viewport changes again. Viewport requests are
+225ms debounced, identical keys are deduplicated, and obsolete responses are ignored.
+
+## Near Me
+
+Only an explicit button requests browser location. Successful coordinates remain in
+React memory and become search input on Apply; they never enter URL, SavedSearch,
+localStorage or sessionStorage. Camera serialization is also disabled while private
+origin is active. Permission denial, unavailability and timeout are ordinary feedback.
+Late geolocation after closing/resetting the form is ignored. Explicit area search
+replaces the private origin with a public, shareable viewport. Distance formatting uses
+only the backend-rounded public distance, including the `< 1 км` bucket.
+
+## Map Loading/Error/Truncated
+
+Map refresh shows a small progress indicator while retaining previous features.
+Map errors and facet errors are independent of the list. Retry is explicit, with safe
+429 feedback and no automatic loop. Truncated responses ask the user to zoom or narrow
+filters and never imply all markers are shown. List loading uses UI-3 skeletons; cursor
+append keeps existing cards; empty state offers reset. An invalid/mismatched cursor
+refreshes the first page once, then surfaces a normal error if that fetch fails.
+
+## Responsive Search Rules
+
+The 1200px breakpoint avoids squeezing filters, cards and map into three narrow columns.
+The desktop page has one document scroll; the map is sticky, not another scrolling
+results container. Mobile drawer is the intentional separate scroll surface. Toolbar,
+chips and range fields wrap without horizontal page overflow. Search tokens reuse UI-1
+colors, spacing, control sizes, header offsets and layers; only sidebar width and map
+layer context are local. Individual map points are not a screen-reader navigation tree:
+List is the accessible alternative. No full assistive-technology or physical-device
+performance audit is claimed.
+
+## UI-4 verification — 2026-10-06
+
+Executed separately on Windows with repository Node 24.21.0:
+
+| Command              | Result                                                     |
+| -------------------- | ---------------------------------------------------------- |
+| `npm run lint`       | Passed ESLint, module boundaries and Prettier              |
+| `npm run typecheck`  | Passed API and Web                                         |
+| `npm test`           | 73 backend and 108 frontend tests passed                   |
+| `npm run build`      | Passed API and Next production builds independently of E2E |
+| `npm run test:e2e`   | 69 passed, 4.0 minutes of browser tests                    |
+| `npm run docs:check` | Markdown link/path audit passed                            |
+
+Browser coverage includes Chromium, Firefox and WebKit desktop, iPhone 14 and
+Pixel 7 emulation. The responsive matrix covers 320, 375, 390, 768, 1024 and 1440px.
+UI-4 scenarios exercise draft/apply, dependent catalog reset, URL history/reload,
+chips, currency/sort, opt-in facets, opaque cursor/deduplication, both category maps,
+cluster expansion, hover/selection, explicit area search and ephemeral Near Me.
+Mobile scenarios cover drawer Escape/focus return, discarded drafts, Apply,
+location denial and switching to an already-loaded map. Axe found no serious or
+critical violations in checked List, Split, Map and drawer states. Segmented view
+buttons change foreground/background atomically to retain contrast during selection.
+
+Screenshot review covered both category workspaces, filter combinations, skeletons,
+empty results, 429 feedback, truncated map feedback, selection, mobile filters,
+location denial and Near Me. Additional local browser checks preserved the same
+canvas element over three List/Map cycles for each category. These are bounded
+checks, not a heap-growth proof or a physical-device performance certification.
+
+The E2E runner now launches Playwright asynchronously: its previous synchronous
+child blocked the parent event loop serving the local map style, so visibility of
+the map container alone could pass while MapLibre never rendered. The regression
+now clicks actual rendered clusters/markers with the local style server responsive.
+The E2E fixture intentionally uses a plain background rather than external tiles;
+production provider availability, quota and visual cartography require staging QA.
+
+`search.css` measures 7,487 source bytes / 1,668 gzip bytes locally. This is the
+workspace stylesheet size, not the net compiled CSS or JavaScript bundle delta.
+No new dependency, polling loop, per-card fetch or map instance per filter change
+was added. Search requests are Apply-driven; map requests are debounced/deduplicated;
+facet requests are explicit. Full heap profiling and Lighthouse were not run.
+
+Evidence is stored locally in ignored `qa-results/ui-4-*.log`,
+`qa-results/ui-4-regression.json` and `qa-results/ui-4-visual/`. Backend Search SQL,
+API contracts and schema were unchanged, so `search:plans` was not rerun for UI-4.
+The E2E project containers, volumes and network were removed and verified absent.
+UI-5 remains a separate stage.

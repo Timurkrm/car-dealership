@@ -12,6 +12,7 @@ import { PublicShell } from '../features/shell/public-shell';
 import { RealtimeProvider } from '../features/realtime/realtime-provider';
 import { FavoriteProvider } from '../features/engagement/favorite-provider';
 import '../styles/results.css';
+import '../styles/search.css';
 
 export const metadata: Metadata = {
   title: 'Automotive Marketplace',

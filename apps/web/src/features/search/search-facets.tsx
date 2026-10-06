@@ -4,7 +4,9 @@ import type { SearchClient } from './search-client';
 import type { SearchListingType } from './search-client';
 import type { SearchParameters } from './search-parameters';
 import { useListingResource } from '../listings/listing-resource';
-import { ListingError } from '../listings/listing-feedback';
+import { Button } from '../../components/ui/button';
+import { Alert } from '../../components/ui/feedback';
+import { searchErrorMessage } from './search-presentation';
 
 /** Explicit opt-in avoids making exact aggregation part of every catalogue request. */
 export function SearchFacetSummary({
@@ -29,17 +31,24 @@ export function SearchFacetSummary({
     ),
   );
   return (
-    <aside aria-label="Число вариантов по текущим фильтрам">
-      <button
-        disabled={requested > 0 && result.loading}
+    <details className="search-facets">
+      <summary>Варианты по фильтрам</summary>
+      <p className="ui-field-hint">
+        Количество после применения всех текущих фильтров.
+      </p>
+      <Button
+        variant="ghost"
+        disabled={requested > 0 && (result.loading || Boolean(result.value))}
         onClick={() => setRequested((value) => value + 1)}
       >
         Посчитать варианты по фильтрам
-      </button>
+      </Button>
       {requested > 0 && result.loading && (
         <p role="status">Считаем варианты…</p>
       )}
-      <ListingError error={result.error} />
+      {Boolean(result.error) && (
+        <Alert tone="error">{searchErrorMessage(result.error)}</Alert>
+      )}
       {result.value && (
         <>
           {(type === 'VEHICLE'
@@ -62,7 +71,7 @@ export function SearchFacetSummary({
               {result.value?.facets[key]
                 ?.map(
                   (row) =>
-                    `${labels?.get(row.value) ?? row.value}: ${row.count}`,
+                    `${labels?.get(row.value) ?? 'Другой вариант'}: ${row.count}`,
                 )
                 .join(', ') || 'нет вариантов'}
             </p>
@@ -72,6 +81,6 @@ export function SearchFacetSummary({
           )}
         </>
       )}
-    </aside>
+    </details>
   );
 }

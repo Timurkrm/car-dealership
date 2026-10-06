@@ -92,6 +92,24 @@ export function searchInArea(
   return next;
 }
 
+/** Ignore sub-pixel movement/URL rounding; longitude comparisons wrap at ±180°. */
+export function viewportChanged(before: MapBounds, after: MapBounds): boolean {
+  const span = (box: MapBounds) => (box.east - box.west + 360) % 360 || 360;
+  const delta = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
+  const longitudeTolerance = Math.max(0.00001, span(before) * 0.02);
+  const latitudeTolerance = Math.max(
+    0.00001,
+    (before.north - before.south) * 0.02,
+  );
+  return (
+    delta(before.west, after.west) > longitudeTolerance ||
+    delta(before.east, after.east) > longitudeTolerance ||
+    Math.abs(span(before) - span(after)) > longitudeTolerance ||
+    Math.abs(before.south - after.south) > latitudeTolerance ||
+    Math.abs(before.north - after.north) > latitudeTolerance
+  );
+}
+
 export function cameraForSearch(
   urlCamera: MapCamera | null,
   filters: SearchParameters,

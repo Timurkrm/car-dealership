@@ -1,5 +1,5 @@
 'use client';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import type { ListingApi } from './listing-api';
 import type { CatalogSelection } from './listing-form-model';
 import { selectMake, selectModel } from './listing-form-model';
@@ -11,6 +11,7 @@ export function CatalogSelects({
   selection,
   onChange,
   onLabelChange,
+  onOptions,
   required = true,
   showGeneration = true,
 }: {
@@ -18,6 +19,7 @@ export function CatalogSelects({
   selection: CatalogSelection;
   onChange: (next: CatalogSelection) => void;
   onLabelChange?: (label: string) => void;
+  onOptions?: (rows: { id: string; name: string }[]) => void;
   required?: boolean;
   showGeneration?: boolean;
 }) {
@@ -45,6 +47,13 @@ export function CatalogSelects({
       [api, selection.modelId, showGeneration],
     ),
   );
+  useEffect(() => {
+    onOptions?.([
+      ...(makes.value ?? []),
+      ...(models.value ?? []),
+      ...(generations.value ?? []),
+    ]);
+  }, [makes.value, models.value, generations.value, onOptions]);
   function change(next: CatalogSelection) {
     onChange(next);
     onLabelChange?.(

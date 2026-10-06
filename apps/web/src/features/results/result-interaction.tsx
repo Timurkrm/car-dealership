@@ -24,7 +24,6 @@ export function ResultInteraction({
       tabIndex={-1}
       className={`result-card result-card--${variant}${selected ? ' result-card--selected' : ''}${hovered ? ' result-card--hovered' : ''}`}
       onMouseEnter={() => {
-        onSelect?.(id);
         onHover?.(id);
       }}
       onMouseLeave={() => onHover?.(null)}

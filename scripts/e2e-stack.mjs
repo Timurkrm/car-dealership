@@ -189,7 +189,22 @@ async function main() {
       run(process.execPath, ['load/run.mjs', profile]);
   else if (workerTraffic) run(process.execPath, ['load/worker-traffic.mjs']);
   else if (faultLoad) run(process.execPath, ['load/fault-under-load.mjs']);
-  else runNpm(['exec', '--', 'playwright', 'test', ...forwarded]);
+  else {
+    // Keep the event loop alive: the local map style server must respond while
+    // browser tests render WebGL layers, rather than merely seeing a container.
+    const browser = startNpm(
+      ['exec', '--', 'playwright', 'test', ...forwarded],
+      'browser',
+    );
+    await new Promise((resolve, reject) => {
+      browser.once('error', reject);
+      browser.once('exit', (code) =>
+        code === 0
+          ? resolve()
+          : reject(new Error(`Playwright failed (${code})`)),
+      );
+    });
+  }
 }
 
 let code = 0;
